@@ -6,6 +6,7 @@
 
 #include <Dense>
 #include <Householder>
+#include <Cholesky>
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -33,11 +34,14 @@ double gammaln(double x) {
     return -tmp + log(2.50662827465*ser);
 }
 
-class ClusterStats {
+struct ClusterStats {
     int d, n;
+
+    // gibbs parameters
     double v0, k0;
     VectorXd u0;
     MatrixXd T0;
+
     VectorXd sum;
     MatrixXd sum_squared;
 
@@ -50,6 +54,19 @@ class ClusterStats {
         T0(T0),
         sum(d),
         sum_squared(d,d) {}
+
+    VectorXd mu() {
+        return sum / d;
+    }
+
+    MatrixXd sigma() {
+        sum_squared / d - sum * sum.adjoint() / d / d;
+    }
+
+    MatrixXd cholesky() {
+        // TODO: figure out which one we actually want
+        return sigma().inverse().llt().matrixL();
+    }
 
     void add(VectorXd x) {
         if(n==0) num_clusters++;
@@ -64,7 +81,7 @@ class ClusterStats {
         sum -= x;
         sum_squared -= x*x.transpose();
     }
-    
+
     void clear(){
         if(n!=0) num_clusters--;
         n = 0;
