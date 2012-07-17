@@ -66,19 +66,19 @@ class ClusterStats {
     }
     
     void clear(){
-      if(n!=0) num_clusters--;
-      n = 0;
-      sum = VectorXd(d);
-      sum_squared = MatrixXd(d,d);
+        if(n!=0) num_clusters--;
+        n = 0;
+        sum = VectorXd(d);
+        sum_squared = MatrixXd(d,d);
     }
 
     // O(d^2) to compute the logpdf
     double logpdf_em(VectorXd x) {
         VectorXd mu = sum/n;
         MatrixXd sigma = sum_squared/n - mu*mu.transpose();
-        HouseholderQR<MatrixXd> qr(sigma);
-        return -0.5*d*log(2*M_PI) - 0.5*qr.logAbsDeterminant() \
-               - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu) + log(n + THETA);
+        HouseholderQR<MatrixXd> qr(sigma); // TODO this is O(d^3)
+        return -0.5*d*log(2*M_PI) - 0.5*qr.logAbsDeterminant() \ //logAbsDeterminant() is probably O(d^2), but not sure
+               - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu) + log(n + THETA); // inverse() is also O(d^3)
     }
 
     // O(d^2) to compute all the parameters, O(d^3) to compute logtpdf
