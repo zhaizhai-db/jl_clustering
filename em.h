@@ -1,6 +1,9 @@
 #include <fstream>
 #include <vector>
+#include <cmath>
+#include <assert.h>
 #include "calculations.h"
+#include "distributions.h"
 
 #include <Dense>
 
@@ -31,6 +34,26 @@ void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
             fout << (*assignments)[n] << endl;
         }
     }
+}
+
+int sample(vector<double> logprobs){
+    double largest = logprobs[0];
+    for(int i=1;i<logprobs.size();i++){
+        largest = max(largest,logprobs[i]);
+    }
+    double sum = 0.0;
+    for(int i=0;i<logprobs.size();i++){
+        logprobs[i] -= largest;
+        sum += exp(logprobs[i]);
+    }
+    double u = random_double(sum), partial_sum = 0.0;
+    for(int i=0;i<logprobs.size();i++){
+        partial_sum += exp(logprobs[i]);
+        if(u < partial_sum){
+            return i;
+        }
+    }
+    assert(false);
 }
 
 void em(MatrixXd data, int K, int T=-1, bool debug=false) {
