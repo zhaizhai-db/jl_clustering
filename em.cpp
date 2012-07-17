@@ -1,14 +1,21 @@
 #include <fstream>
 ofstream fout("log.txt");
 
+void save_init(matrix data){
+  fout << 2 << endl;
+  fout << data.num_rows() << data.num_cols() << endl;
+  fout << data << endl;
+}
+
 void save(vector<ClusterStats> clusters,vector<int> assignments=NULL){
   int K=clusters.size();
   int N=assignments.size();
-  int D=clusters[0].moment2.num_cols();
-  fout << N << D << K << fprintf(fout,"%d %d %d %d\n",N,D,K,assignments==NULL?0:1);
+  int D=clusters[0].d;
+  fout << (assignments==NULL?0:1) << endl;
+  fout << N << D << K << endl;
   for(int k=0;k<K;k++)
-    fout << clusters[k].moment1 << endl;
-    fout << clusters[k].moment2 << endl;
+    fout << clusters[k].mu() << endl;
+    fout << clusters[k].sigma() << endl;
   }
   if(assignments != NULL)
     for(int n=0;n<N;n++)
