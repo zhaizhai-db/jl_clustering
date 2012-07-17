@@ -43,6 +43,7 @@ void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
         fout << clusters[k].sigma() << endl;
     }
     if (assignments != NULL) {
+        fout << "Assignments of " << N << " points:" << endl;
         for(int n = 0; n < N; n++) {
             fout << (*assignments)[n] << endl;
         }
@@ -56,15 +57,15 @@ int sample(vector<double> logprobs){
     }
     double sum = 0.0;
     for(int i=0;i<(int)logprobs.size();i++){
-        cout << "logprobs[" << i << "]=" << logprobs[i] << endl;
+        //cout << "logprobs[" << i << "]=" << logprobs[i] << endl;
         logprobs[i] -= largest;
         sum += exp(logprobs[i]);
     }
     double u = random_double(sum), partial_sum = 0.0;
-    cout << "u=" << u << " sum=" << sum << endl;
+    //cout << "u=" << u << " sum=" << sum << endl;
     for(int i=0;i<(int)logprobs.size();i++){
         partial_sum += exp(logprobs[i]);
-        cout << "partial sum=" << partial_sum << endl;
+        //cout << "partial sum=" << partial_sum << endl;
         if(u < partial_sum){
             return i;
         }

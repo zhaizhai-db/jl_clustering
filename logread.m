@@ -3,14 +3,15 @@ fin = fopen('log.txt','r');
 while ~feof(fid)
     status = fscanf(fin,'Log type %d:',1);
     skip = fscanf(fin,'%s',1);
+    fprintf(1,'skip=%s=\n',skip);
     if isempty(status)
         break
     end
     fprintf(1,'status: %d\n',status);
     if status == 0 || status == 1
-        N=fscanf(fin,'N: %d',1);
-        D=fscanf(fin,', D: %d',1);
-        K=fscanf(fin,', K: %d',1);
+        N=fscanf(fin,'N: %d',1); N
+        D=fscanf(fin,', D: %d',1); D
+        K=fscanf(fin,', K: %d',1); K
         fprintf(1,'params: %d %d %d\n',N,D,K);
         mu = zeros(K,D);
         sigma = zeros(K,D,D);
@@ -39,8 +40,8 @@ while ~feof(fid)
         disp(assignments);
     end
     if status == 2
-        N=fscanf(fin,'Width: %d',1);
-        D=fscanf(fin,', height: %d',1);
+        N=fscanf(fin,'\nWidth: %d',1); N
+        D=fscanf(fin,', height: %d',1); D
         fprintf(1,'params: %d %d\n',N,D);
         skip=fscanf(fin,'Data:',1)';
         data=fscanf(fin,'%f',[D N])';
