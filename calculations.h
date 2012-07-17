@@ -12,7 +12,9 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::HouseholderQR;
 
-#define THETA 2.0f
+#define THETA 2.0
+#define ALPHA 0.5
+int num_clusters = 0;
 
 double gammaln(double x) {
     double tmp, ser;
@@ -50,6 +52,7 @@ class ClusterStats {
         sum_squared(d,d) {}
 
     void add(VectorXd x) {
+        if(n==0) num_clusters++;
         n++;
         sum += x;
         sum_squared += x*x.transpose();
@@ -57,8 +60,16 @@ class ClusterStats {
 
     void remove(VectorXd x) {
         n--;
+        if(n==0) num_clusters--;
         sum -= x;
         sum_squared -= x*x.transpose();
+    }
+    
+    void clear(){
+      if(n!=0) num_clusters--;
+      n = 0;
+      sum = VectorXd(d);
+      sum_squared = MatrixXd(d,d);
     }
 
     // O(d^2) to compute the logpdf
@@ -71,6 +82,17 @@ class ClusterStats {
     }
 
     // O(d^2) to compute all the parameters, O(d^3) to compute logtpdf
+    // Equations:
+    // x ~ t_{v_n-d+1}(u_n, T_n(k_n+1)/k_n(v_n-d+1))
+    // u_n = (k*u_0 + n*xbar)/(k+n)
+    // v_n = v + n
+    // k_n = k + n
+    // T_n = T + S_n + k*n/(k+n)*(u0-xbar)*(u0-xbar)^T
+    // S_n = sum (x_i-xbar)*(x_i-xbar)^T
+    // sufficient statistics for all of this:
+    // sum x_i
+    // sum x_i*x_i^T
+    // n
     double logpdf_mcmc(VectorXd x) {
         if (n > 0) {
             VectorXd xbar = sum/n;
@@ -79,9 +101,9 @@ class ClusterStats {
             double kn = k0 + n;
             MatrixXd Sn = sum_squared - sum*sum.transpose()/n;
             MatrixXd Tn = T0 + Sn + k0*n/(k0 + n)*(u0 - xbar)*(u0 - xbar).transpose();
-            return logtpdf(x, d, vn - d + 1, un, Tn*(kn + 1)/(kn*(vn - d + 1))) + log(n);
+            return logtpdf(x, d, vn - d + 1, un, Tn*(kn + 1)/(kn*(vn - d + 1))) + log(n-ALPHA);
         } else {
-            return logtpdf(x, d, v0 - d + 1, u0, T0*(k0 + 1)/(k0*(v0 - d + 1))) + log(THETA);
+            return logtpdf(x, d, v0 - d + 1, u0, T0*(k0 + 1)/(k0*(v0 - d + 1))) + log(THETA+num_clusters*ALPHA);
         }
     }
 
