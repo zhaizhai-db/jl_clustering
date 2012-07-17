@@ -1,5 +1,5 @@
 %% read in file
-fin = fopen('strippedlog.txt','r');
+fin = fopen('fixedlog.txt','r');
 while ~feof(fid)
     status = fscanf(fin,'%d',1);
     if isempty(status)

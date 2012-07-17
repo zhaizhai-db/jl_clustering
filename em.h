@@ -38,12 +38,12 @@ void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
             "Log type 1: current_iteration") << endl;
     fout << "N: " << N << ", D: " << D << ", K: " << K << endl;
     for (int k = 0; k < K; k++) {
-        fout << "Cluster " << k << " mu and sigma:" << endl;
+        fout << "Cluster mu and sigma:" << endl;
         fout << clusters[k].mu() << endl;
         fout << clusters[k].sigma() << endl;
     }
     if (assignments != NULL) {
-        fout << "Assignments of " << N << " points:" << endl;
+        fout << "Assignments:" << endl;
         for(int n = 0; n < N; n++) {
             fout << (*assignments)[n] << endl;
         }
