@@ -38,14 +38,15 @@ struct ClusterStats {
         u0(u0),
         T0(T0),
         sum(d),
-        sum_squared(d,d) {}
+        sum_squared(1e-6*MatrixXd::Identity(d,d)) {
+        }
 
     VectorXd mu() {
-        return sum / d;
+        return sum / n;
     }
 
     MatrixXd sigma() {
-        return sum_squared / d - sum * sum.adjoint() / d / d;
+        return sum_squared / n - sum * sum.adjoint() / n / n;
     }
 
     MatrixXd cholesky() {
@@ -71,7 +72,7 @@ struct ClusterStats {
         if(n!=0) num_clusters--;
         n = 0;
         sum = VectorXd(d);
-        sum_squared = MatrixXd(d,d);
+        sum_squared = 1e-6*MatrixXd::Identity(d,d);
     }
 
     // O(d^2) to compute the logpdf
