@@ -13,7 +13,11 @@ const double ACCEPT_MULTIPLIER = 0.98;
 
 struct JLProjection {
     int m, d;
+
+    // if x is d-dimensional, then |vecs_md * x| should be a good
+    // estimate of |x|
     MatrixXd vecs_md;
+
     vector<ClusterStats *> clusters;
     vector<MatrixXd> projections_md;
 
@@ -22,13 +26,16 @@ struct JLProjection {
         vecs_md = MatrixXd(m, d);
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < d; j++)
-                vecs_md(i, j) = gaussian() / d;
+                vecs_md(i, j) = gaussian() / sqrt(m);
         }
     }
 
     void add_cluster(ClusterStats * cluster) {
         clusters.push_back(cluster);
-        // TODO: check if cluster->cholesky() is right
+        // if U = cluster->cholesky(), then estimating x^t sigma^-1 x
+        // is the same as estimating |Ux|^2
+        MatrixXd proj = vecs_md * cluster->cholesky();
+        proj *= sqrt(d) / sqrt(m);
         projections_md.push_back(vecs_md * cluster->cholesky());
     }
 
@@ -37,7 +44,7 @@ struct JLProjection {
 
         for (int i = 0; i < clusters.size(); i++) {
             VectorXd v_m = projections_md[i] * x_d;
-            double p = gaussian_logpdf(v_m.dot(v_m)); // TODO: implement
+            double p = gaussian_logpdf(v_m.dot(v_m), d);
             est_logprobs.push_back(p);
         }
 
@@ -53,11 +60,11 @@ struct JLProjection {
             sum_prob += exp(est_logprobs[i]) * clusters[i]->n;
 
         while (true) {
-            double t = rand(sum_prob);
+            double t = random_double(sum_prob);
             int cur = 0;
 
             while (t > est_logprobs[cur]) {
-                t -= exp(est_logprobs[cur]) * clusters[i]->n;
+                t -= exp(est_logprobs[cur]) * clusters[cur]->n;
                 cur++;
             }
 
@@ -67,7 +74,7 @@ struct JLProjection {
             // assert(abs(log_discrep) < SOMETHING);
 
             double accept = ACCEPT_MULTIPLIER * exp(log_discrep);
-            if (rand(1.0) < accept)
+            if (random_double() < accept)
                 return clusters[cur];
         }
 
