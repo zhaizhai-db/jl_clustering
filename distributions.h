@@ -4,6 +4,10 @@
 #include <cstdlib>
 #include <cmath>
 
+#include <Dense>
+
+using Eigen::VectorXd;
+
 bool RAND_INITIALIZED = false; // maybe we shouldn't have this global...
 
 void init_random() {
@@ -52,6 +56,10 @@ double gammaln(double x) {
         ser += cof[j]/x;
     }
     return -tmp + log(2.50662827465*ser);
+}
+
+double gaussian_logpdf(VectorXd x) {
+    return -0.5 * (x.rows() * log (2 * M_PI) + x.dot(x));
 }
 
 #endif

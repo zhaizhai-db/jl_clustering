@@ -75,12 +75,17 @@ struct ClusterStats {
     }
 
     // O(d^2) to compute the logpdf
-    double logpdf_em(VectorXd x) {
+    double logpdf(VectorXd x) {
         VectorXd mu = sum/n;
         MatrixXd sigma = sum_squared/n - mu*mu.transpose();
         HouseholderQR<MatrixXd> qr(sigma); // TODO this is O(d^3)
         return -0.5*d*log(2*M_PI) - 0.5*qr.logAbsDeterminant() \
-               - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu) + log(n + THETA); // inverse() is also O(d^3)
+            - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu);
+        // inverse() is also O(d^3)
+    }
+
+    double logpdf_em(VectorXd x) {
+        return logpdf(x) + log(n + THETA);
     }
 
     // O(d^2) to compute all the parameters, O(d^3) to compute logtpdf
