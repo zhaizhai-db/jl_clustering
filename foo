@@ -1,2 +1,2 @@
 #!/bin/sh
-g++ calculations.cpp -I ./Eigen
+g++ em.cpp -I ./Eigen

@@ -94,7 +94,7 @@ struct ClusterStats {
         VectorXd mu = sum/n;
         MatrixXd sigma = sum_squared/n - mu*mu.transpose();
         HouseholderQR<MatrixXd> qr(sigma); // TODO this is O(d^3)
-        return -0.5*d*log(2*M_PI) - 0.5*qr.logAbsDeterminant() \ //logAbsDeterminant() is probably O(d^2), but not sure
+        return -0.5*d*log(2*M_PI) - 0.5*qr.logAbsDeterminant() \
                - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu) + log(n + THETA); // inverse() is also O(d^3)
     }
 
