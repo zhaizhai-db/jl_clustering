@@ -50,19 +50,23 @@ struct JLProjection {
 
         double sum_prob = 0.0;
         for (int i = 0; i < est_logprobs.size(); i++)
-            sum_prob += exp(est_logprobs[i]);
+            sum_prob += exp(est_logprobs[i]) * clusters[i]->n;
 
         while (true) {
             double t = rand(sum_prob);
             int cur = 0;
 
             while (t > est_logprobs[cur]) {
-                t -= exp(est_logprobs[cur]);
+                t -= exp(est_logprobs[cur]) * clusters[i]->n;
                 cur++;
             }
 
-            double accept = ACCEPT_MULTIPLIER
-                * exp(clusters[cur]->logpdf_em(x_d) - est_logprobs[cur]);
+            double log_discrep = clusters[cur]->logpdf(x_d)
+                - est_logprobs[cur] + max_log;
+            // TODO: eventually check that the discrepancy is not large
+            // assert(abs(log_discrep) < SOMETHING);
+
+            double accept = ACCEPT_MULTIPLIER * exp(log_discrep);
             if (rand(1.0) < accept)
                 return clusters[cur];
         }
