@@ -60,7 +60,7 @@ struct ClusterStats {
     }
 
     MatrixXd sigma() {
-        sum_squared / d - sum * sum.adjoint() / d / d;
+        return sum_squared / d - sum * sum.adjoint() / d / d;
     }
 
     MatrixXd cholesky() {
@@ -124,7 +124,7 @@ struct ClusterStats {
         }
     }
 
-    // t(x) = Gamma(v/2+d/2)/Gamma(v/2) * det(Sigma)^-0.5 \
+    // t(x) = Gamma(v/2+d/2)/Gamma(v/2) * det(Sigma)^-0.5 
     // / [(pi*v)^(d/2)] * [1+(1/v)*(x-u)^T*Sigma^-1*(x-u)]^-((v+d)/2)
     double logtpdf(VectorXd x, int d, double v, VectorXd mu, MatrixXd sigma){
         HouseholderQR<MatrixXd> qr(sigma);
