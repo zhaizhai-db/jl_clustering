@@ -1,7 +1,12 @@
-#include "distributions.h"
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <Dense>
+#include "calculations.h"
+#include "distributions.h"
+
+using namespace Eigen;
+using namespace std;
 
 const double EPS = 1e-9;
 const double ACCEPT_MULTIPLIER = 0.98;
@@ -52,7 +57,7 @@ struct JLProjection {
       }
 
       double accept = ACCEPT_MULTIPLIER
-        * (exp(clusters[cur]->logpdf_em(x)) / est_probs[cur]);
+        * (exp(clusters[cur]->logpdf_em(x_d)) / est_probs[cur]);
       if (rand(1.0) < accept)
         return clusters[cur];
     }
@@ -60,3 +65,6 @@ struct JLProjection {
     return NULL;
   }
 };
+
+int main() {
+}
