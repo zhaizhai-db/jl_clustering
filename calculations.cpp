@@ -1,8 +1,8 @@
 #include <complex>
 #include <iostream>
 
-#include <Eigen/Dense>
-#include <Eigen/Householder>
+#include <Dense>
+#include <Householder>
 
 using namespace std;
 using Eigen::MatrixXd;

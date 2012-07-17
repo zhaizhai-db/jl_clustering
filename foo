@@ -1,2 +1,2 @@
 #!/bin/sh
-g++ calculations.cpp -I /usr/local/include/eigen3
+g++ calculations.cpp -I ./Eigen
