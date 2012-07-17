@@ -14,9 +14,12 @@ using Eigen::VectorXd;
 ofstream fout("log.txt");
 
 void save_init(MatrixXd data) {
-    fout << 2 << endl;
-    fout << data.rows() << " " << data.cols() << endl;
-    fout << data << endl;
+//    fout << 2 << endl;
+//    fout << data.rows() << " " << data.cols() << endl;
+//    fout << data << endl;
+    fout << "Log type 2: data_matrix" << endl;
+    fout << "Width: " << data.rows() << ", height: " << data.cols() << endl;
+    fout << "Data:" << endl << data << endl;
 }
 
 void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
@@ -29,9 +32,13 @@ void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
         N = assignments->size();
     }
     int D = clusters[0].d;
-    fout << (assignments == NULL ? 0 : 1) << endl;
-    fout << N << " " << D << " " << K << endl;
+//    fout << (assignments == NULL ? 0 : 1) << endl;
+//    fout << N << " " << D << " " << K << endl;
+    fout << (assignments == NULL ? "Log type 0: initial_clusters" :
+            "Log type 1: current_iteration") << endl;
+    fout << "N: " << N << ", D: " << D << ", K: " << K << endl;
     for (int k = 0; k < K; k++) {
+        fout << "Cluster " << k << " mu and sigma:" << endl;
         fout << clusters[k].mu() << endl;
         fout << clusters[k].sigma() << endl;
     }
@@ -75,9 +82,8 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
     vector<ClusterStats> clusters;
     for (int k = 0; k < K; k++){
         ClusterStats new_cluster(D, 0.0, 0.0, VectorXd(D), MatrixXd(D, D));
-        new_cluster.n = 1;
-        new_cluster.sum = data.row(random_int(N));
-        new_cluster.sum_squared = MatrixXd::Identity(D, D);
+        new_cluster.add(data.row(random_int(N)));
+        new_cluster.sum_squared += MatrixXd::Identity(D,D);
         clusters.push_back(new_cluster);
     }
     if (debug) {

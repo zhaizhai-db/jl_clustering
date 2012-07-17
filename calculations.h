@@ -8,6 +8,8 @@
 #include <Householder>
 #include <Cholesky>
 
+#include "distributions.h"
+
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -16,23 +18,6 @@ using Eigen::HouseholderQR;
 #define THETA 2.0
 #define ALPHA 0.5
 int num_clusters = 0;
-
-double gammaln(double x) {
-    double tmp, ser;
-    static double cof[6] = {76.18009173, -86.50532033, 24.01409822,
-                            -1.231739516, 0.120858003e-2, -0.536382e-5};
-    int j;
-
-    x -= 1.0;
-    tmp = x + 5.5;
-    tmp -= (x + 0.5)*log(tmp);
-    ser = 1.0;
-    for (j = 0; j <= 5; j++) {
-        x += 1.0;
-        ser += cof[j]/x;
-    }
-    return -tmp + log(2.50662827465*ser);
-}
 
 struct ClusterStats {
     int d, n;
@@ -91,12 +76,17 @@ struct ClusterStats {
     }
 
     // O(d^2) to compute the logpdf
-    double logpdf_em(VectorXd x) {
+    double logpdf(VectorXd x) {
         VectorXd mu = sum/n;
         MatrixXd sigma = sum_squared/n - mu*mu.transpose();
         HouseholderQR<MatrixXd> qr(sigma); // TODO this is O(d^3)
         return -0.5*d*log(2*M_PI) - 0.5*qr.logAbsDeterminant() \
-               - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu) + log(n + THETA); // inverse() is also O(d^3)
+            - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu);
+        // inverse() is also O(d^3)
+    }
+
+    double logpdf_em(VectorXd x) {
+        return logpdf(x) + log(n + THETA);
     }
 
     // O(d^2) to compute all the parameters, O(d^3) to compute logtpdf
@@ -125,7 +115,7 @@ struct ClusterStats {
         }
     }
 
-    // t(x) = Gamma(v/2+d/2)/Gamma(v/2) * det(Sigma)^-0.5 
+    // t(x) = Gamma(v/2+d/2)/Gamma(v/2) * det(Sigma)^-0.5
     // / [(pi*v)^(d/2)] * [1+(1/v)*(x-u)^T*Sigma^-1*(x-u)]^-((v+d)/2)
     double logtpdf(VectorXd x, int d, double v, VectorXd mu, MatrixXd sigma){
         HouseholderQR<MatrixXd> qr(sigma);
