@@ -37,7 +37,7 @@ struct ClusterStats {
         k0(k0),
         u0(u0),
         T0(T0),
-        sum(d),
+        sum(VectorXd::Zero(d)),
         sum_squared(1e-6*MatrixXd::Identity(d,d)) {
         }
 
@@ -71,7 +71,7 @@ struct ClusterStats {
     void clear(){
         if(n!=0) num_clusters--;
         n = 0;
-        sum = VectorXd(d);
+        sum = VectorXd::Zero(d);
         sum_squared = 1e-6*MatrixXd::Identity(d,d);
     }
 

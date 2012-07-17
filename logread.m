@@ -1,4 +1,5 @@
 %% read in file
+!python fixlog.py
 fin = fopen('fixedlog.txt','r');
 while ~feof(fid)
     status = fscanf(fin,'%d',1);
