@@ -9,7 +9,7 @@ bool RAND_INITIALIZED = false; // maybe we shouldn't have this global...
 void init_random() {
   if (!RAND_INITIALIZED) {
     RAND_INITIALIZED = true;
-    srandom(time(NULL));
+    srandom(59403854);
   }
 }
 

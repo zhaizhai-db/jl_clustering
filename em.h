@@ -15,16 +15,22 @@ ofstream fout("log.txt");
 
 void save_init(MatrixXd data) {
     fout << 2 << endl;
-    fout << data.rows() << data.cols() << endl;
+    fout << data.rows() << " " << data.cols() << endl;
     fout << data << endl;
 }
 
 void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
     int K = clusters.size();
-    int N = clusters[0].mu().size();
+    int N;
+    if(assignments == NULL){
+        N = -1;
+    }
+    else {
+        N = assignments->size();
+    }
     int D = clusters[0].d;
     fout << (assignments == NULL ? 0 : 1) << endl;
-    fout << N << D << K << endl;
+    fout << N << " " << D << " " << K << endl;
     for (int k = 0; k < K; k++) {
         fout << clusters[k].mu() << endl;
         fout << clusters[k].sigma() << endl;
@@ -38,17 +44,20 @@ void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
 
 int sample(vector<double> logprobs){
     double largest = logprobs[0];
-    for(int i=1;i<logprobs.size();i++){
+    for(int i=1;i<(int)logprobs.size();i++){
         largest = max(largest,logprobs[i]);
     }
     double sum = 0.0;
-    for(int i=0;i<logprobs.size();i++){
+    for(int i=0;i<(int)logprobs.size();i++){
+        cout << "logprobs[" << i << "]=" << logprobs[i] << endl;
         logprobs[i] -= largest;
         sum += exp(logprobs[i]);
     }
     double u = random_double(sum), partial_sum = 0.0;
-    for(int i=0;i<logprobs.size();i++){
+    cout << "u=" << u << " sum=" << sum << endl;
+    for(int i=0;i<(int)logprobs.size();i++){
         partial_sum += exp(logprobs[i]);
+        cout << "partial sum=" << partial_sum << endl;
         if(u < partial_sum){
             return i;
         }
@@ -66,7 +75,9 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
     vector<ClusterStats> clusters;
     for (int k = 0; k < K; k++){
         ClusterStats new_cluster(D, 0.0, 0.0, VectorXd(D), MatrixXd(D, D));
-        new_cluster.add(data.row(rand()));
+        new_cluster.n = 1;
+        new_cluster.sum = data.row(random_int(N));
+        new_cluster.sum_squared = MatrixXd::Identity(D, D);
         clusters.push_back(new_cluster);
     }
     if (debug) {
