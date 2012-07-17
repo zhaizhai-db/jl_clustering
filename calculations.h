@@ -8,6 +8,8 @@
 #include <Householder>
 #include <Cholesky>
 
+#include "distributions.h"
+
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -16,23 +18,6 @@ using Eigen::HouseholderQR;
 #define THETA 2.0
 #define ALPHA 0.5
 int num_clusters = 0;
-
-double gammaln(double x) {
-    double tmp, ser;
-    static double cof[6] = {76.18009173, -86.50532033, 24.01409822,
-                            -1.231739516, 0.120858003e-2, -0.536382e-5};
-    int j;
-
-    x -= 1.0;
-    tmp = x + 5.5;
-    tmp -= (x + 0.5)*log(tmp);
-    ser = 1.0;
-    for (j = 0; j <= 5; j++) {
-        x += 1.0;
-        ser += cof[j]/x;
-    }
-    return -tmp + log(2.50662827465*ser);
-}
 
 struct ClusterStats {
     int d, n;
@@ -124,7 +109,7 @@ struct ClusterStats {
         }
     }
 
-    // t(x) = Gamma(v/2+d/2)/Gamma(v/2) * det(Sigma)^-0.5 
+    // t(x) = Gamma(v/2+d/2)/Gamma(v/2) * det(Sigma)^-0.5
     // / [(pi*v)^(d/2)] * [1+(1/v)*(x-u)^T*Sigma^-1*(x-u)]^-((v+d)/2)
     double logtpdf(VectorXd x, int d, double v, VectorXd mu, MatrixXd sigma){
         HouseholderQR<MatrixXd> qr(sigma);
