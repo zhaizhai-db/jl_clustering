@@ -63,7 +63,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
 
         //update cluster parameters
         for (int k = 0; k < K; k++) {
-            clusters.clear();
+            clusters[k].clear();
         }
         for (int n = 0; n < N; n++) {
             clusters[assignments[n]].add(data.row(n));
