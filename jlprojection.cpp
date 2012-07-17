@@ -1,5 +1,7 @@
+#include "distributions.h"
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 const double EPS = 1e-9;
 const double ACCEPT_MULTIPLIER = 0.98;
@@ -13,7 +15,10 @@ struct JLProjection {
   JLProjection(int _m, int _d) :
     m(_m), d(_d) {
     vecs_md = MatrixXd(m, d);
-    // TODO: make it random
+    for (int i = 0; i < m; i++) {
+      for (int j = 0; j < d; j++)
+        vecs_md(i, j) = gaussian() / d;
+    }
   }
 
   void add_cluster(ClusterStats * cluster) {
@@ -46,7 +51,6 @@ struct JLProjection {
         cur++;
       }
 
-      // TODO: exp
       double accept = ACCEPT_MULTIPLIER
         * (exp(clusters[cur]->logpdf_em(x)) / est_probs[cur]);
       if (rand(1.0) < accept)
