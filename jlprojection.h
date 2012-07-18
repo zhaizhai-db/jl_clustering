@@ -1,5 +1,6 @@
 #ifndef M_JLPROJECTION
 #define M_JLPROJECTION
+
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -14,11 +15,13 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
-const double EPS = 1e-9;
-const double ACCEPT_MULTIPLIER = 0.98;
-
 int get_proj_dim(int n, int d, int k) {
     return 10;
+}
+
+double compute_min_bound(int m, double error_prob) {
+    double x = 1.0 / (1.0 + sqrt(-2 * log(error_prob) / m));
+    return x * x;
 }
 
 struct JLProjection {
@@ -34,14 +37,14 @@ struct JLProjection {
     vector<Cluster *> clusters;
     vector<MatrixXd> projections_md;
 
-    JLProjection(int _m, int _d) :
+JLProjection(int _m, int _d, double error_prob=1e-6) :
         m(_m), d(_d) {
         vecs_md = MatrixXd(m, d);
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < d; j++)
                 vecs_md(i, j) = gaussian() / sqrt(m);
         }
-        min_bound = 0.5; // TODO: compute for real
+        min_bound = compute_min_bound(m, error_prob);
     }
 
     void add_cluster(Cluster * cluster) {
