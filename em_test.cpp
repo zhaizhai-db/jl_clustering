@@ -32,7 +32,7 @@ void test2(){
             data(n,d)=x;
         }
     }
-    em(data,K,-1,true,1);
+    em(data,K,20,true,1);
 }
 
 void libras_test(){

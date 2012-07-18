@@ -126,7 +126,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
     for (int k = 0; k < K; k++){
         ClusterStats new_cluster(D, 0.0, 0.0, VectorXd(D), MatrixXd(D, D));
         new_cluster.add(data.row(random_int(N)));
-        new_cluster.sum_squared += MatrixXd::Identity(D,D);
+        new_cluster.sum_squared += 250*MatrixXd::Identity(D,D);
         clusters.push_back(new_cluster);
     }
     if (debug) {

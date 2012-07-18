@@ -45,7 +45,7 @@ struct JLProjection {
         // if U = cluster->cholesky(), then estimating x^t sigma^-1 x
         // is the same as estimating |Ux|^2
         MatrixXd proj = vecs_md * cluster->cholesky();
-        proj *= sqrt(d) / sqrt(m);
+        //proj *= sqrt(d) / sqrt(m);
         projections_md.push_back(vecs_md * cluster->cholesky());
     }
 
@@ -55,6 +55,9 @@ struct JLProjection {
 
         for (int i = 0; i < (int)clusters.size(); i++) {
             VectorXd x_m = projections_md[i] * (x_d - clusters[i]->mu());
+            VectorXd y_d = x_d - clusters[i]->mu();
+            //cout << "y_d: " << y_d.dot(clusters[i]->sigma().inverse()*y_d) << ", x_m: " << x_m.dot(x_m) << endl;
+            //getchar();
             double p = gaussian_logpdf(x_m.dot(x_m), d);
             p -= 0.5 * clusters[i]->log_abs_det();
             est_loglikelies.push_back(p);
@@ -90,12 +93,12 @@ struct JLProjection {
             // assert(abs(log_discrep) < SOMETHING);
 
             double accept = ACCEPT_MULTIPLIER * exp(log_discrep);
-            cout << "est_loglikelies:" << endl << "  ";
+            /*cout << "est_loglikelies:" << endl << "  ";
             for (int i = 0; i < (int)est_loglikelies.size(); i++){
                 cout << est_loglikelies[i] - max_log << " ";
             }
-            cout << endl;
-            cout << "accept probability " << accept << endl;
+            cout << endl;*/
+            //cout << "accept probability " << accept << endl;
             if (random_double() < accept)
                 return cur;
         }
