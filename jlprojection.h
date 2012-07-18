@@ -18,7 +18,7 @@ const double EPS = 1e-9;
 const double ACCEPT_MULTIPLIER = 0.98;
 
 int get_proj_dim(int n, int d, int k) {
-    return d - 1;
+    return 100;
 }
 
 struct JLProjection {
@@ -54,8 +54,9 @@ struct JLProjection {
         vector<double> est_probs;
 
         for (int i = 0; i < clusters.size(); i++) {
-            VectorXd x_m = projections_md[i] * x_d;
+            VectorXd x_m = projections_md[i] * (x_d - clusters[i]->mu());
             double p = gaussian_logpdf(x_m.dot(x_m), d);
+            p -= 0.5 * clusters[i]->log_abs_det();
             est_loglikelies.push_back(p);
         }
 
@@ -71,14 +72,6 @@ struct JLProjection {
             est_probs.push_back(prob);
             sum_prob += prob;
         }
-
-        /*
-        for (int i = 0; i < clusters.size(); i++) {
-            cout << "est: " << est_probs[i] / sum_prob << ", "
-                 << est_loglikelies[i] << ", "
-                 << exp(clusters[i]->logpdf(x_d)) << endl;
-        }
-        */
 
         while (true) {
             double t = random_double(sum_prob);
