@@ -14,6 +14,9 @@ end
 clf;
 plot(points(:,1),points(:,2),'.');
 %% write to file
+K = 3;
+N = 30;
+D = 2;
 fout = fopen('data.in','w');
 fprintf(fout,'%d %d %d\n',N,D,K);
 fprintf(fout,'%f\n',points');

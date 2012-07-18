@@ -13,6 +13,8 @@ using Eigen::VectorXd;
 
 ofstream fout("log.txt");
 
+#define S (1)
+
 void save_init(MatrixXd data) {
 //    fout << 2 << endl;
 //    fout << data.rows() << " " << data.cols() << endl;
@@ -91,6 +93,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
         save(clusters);
     }
 
+    double loglikelihood_old;
     for(int t = 0; t != T; t++) { //TODO deal with case when T == -1
         //update assignments
         vector<int> assignments;
@@ -99,7 +102,9 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
             for (int k = 0; k < K; k++) {
                 logprobs.push_back(clusters[k].logpdf_em(data.row(n)));
             }
-            assignments.push_back(sample(logprobs));
+            for(int s = 0; s < S; s++){
+                assignments.push_back(sample(logprobs));
+            }
         }
 
         //update cluster parameters
@@ -107,8 +112,24 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
             clusters[k].clear();
         }
         for (int n = 0; n < N; n++) {
-            clusters[assignments[n]].add(data.row(n));
+            for(int s = 0; s < S; s++){
+                clusters[assignments[S*n+s]].add(data.row(n));
+            }
         }
+
+        //compute loglikelihood to test convergence
+        double loglikelihood = 0.0;
+        for(int n = 0; n < N; n++){
+            for(int s = 0; s < S; s++){
+                loglikelihood += clusters[assignments[S*n+s]].logpdf_em(data.row(n)) / S;
+            }
+        }
+        cout << loglikelihood << endl;
+        if(T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)
+            break;
+        loglikelihood_old = loglikelihood;
+
+
         if (debug) {
             save(clusters, &assignments);
         }

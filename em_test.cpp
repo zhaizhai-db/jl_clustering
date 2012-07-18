@@ -29,7 +29,7 @@ void test2(){
             cout << "x=" << x << endl;
             data(n,d)=x;
         }
-    em(data,K,50,true);
+    em(data,K,-1,true);
 }
 
 int main(){
