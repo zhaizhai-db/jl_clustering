@@ -15,8 +15,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::HouseholderQR;
 
-#define USE_CACHING true
-#define THETA 2.0
+const bool USE_CACHING = true;
+const double THETA = 2.0;
 int num_clusters = 0;
 
 class Cluster {
@@ -32,7 +32,7 @@ class Cluster {
     bool cholesky_is_cached;
     bool logdet_is_cached;
     VectorXd cached_mu;
-    VectorXd cached_sigma;
+    MatrixXd cached_sigma;
     MatrixXd cached_inverse;
     MatrixXd cached_cholesky;
     double cached_logdet;
@@ -94,8 +94,8 @@ class Cluster {
     // Different distributions have different 'effective mu and sigma',
     // so this method does NOT necessarily return the mean and
     // covariance of points in the cluster.
-    virtual VectorXd recompute_mu();
-    virtual MatrixXd recompute_sigma();
+    virtual VectorXd recompute_mu() = 0;
+    virtual MatrixXd recompute_sigma() = 0;
 
     // Cached in cached_mu.
     const VectorXd& mu() {
@@ -107,7 +107,7 @@ class Cluster {
     }
 
     // Cached in cached_sigma.
-    const VectorXd& sigma() {
+    const MatrixXd& sigma() {
         if (!sigma_is_cached) {
             cached_sigma = recompute_sigma();
             sigma_is_cached = USE_CACHING;
@@ -145,8 +145,17 @@ class Cluster {
     }
 
     // O(d^2) to compute the logpdf
-    virtual double log_pdf(const VectorXd& x);
-    virtual double log_posterior(const VectorXd& x);
+    virtual double log_pdf_norm(double norm_sq) = 0;
+    virtual double log_pdf(const VectorXd & x) {
+        VectorXd y = x - mu();
+        return log_pdf_norm(y.dot(sigma_inverse() * y));
+    }
+
+    virtual double log_posterior_norm(double norm_sq) = 0;
+    virtual double log_posterior(const VectorXd& x) {
+        VectorXd y = x - mu();
+        return log_posterior_norm(y.dot(sigma_inverse() * y));
+    }
 };
 
 #endif

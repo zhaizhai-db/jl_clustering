@@ -3,10 +3,12 @@
 #include <ctime>
 #include <cstdlib>
 #include <cmath>
+#include <vector>
 
 #include <Dense>
 
 using Eigen::VectorXd;
+using std::vector;
 
 bool RAND_INITIALIZED = false; // maybe we shouldn't have this global...
 
@@ -63,6 +65,33 @@ double gammaln(double x) {
 // |x|^2 = norm_squared
 double gaussian_logpdf(double norm_squared, int dim) {
     return -0.5 * (dim * log (2 * M_PI) + norm_squared);
+}
+
+// numerically robust sampling from logprobs
+// e.g. if logprobs = [0, -1, -2], then
+// sum = 1 + e^-1 + e^-2, and
+// returns 0 with probability 1/sum, etc.
+int sample(vector<double> logprobs){
+    double largest = logprobs[0];
+    for(int i=1;i<(int)logprobs.size();i++){
+        largest = std::max(largest,logprobs[i]);
+    }
+    double sum = 0.0;
+    for(int i=0;i<(int)logprobs.size();i++){
+        //cout << "logprobs[" << i << "]=" << logprobs[i] << endl;
+        logprobs[i] -= largest;
+        sum += exp(logprobs[i]);
+    }
+    double u = random_double(sum), partial_sum = 0.0;
+    //cout << "u=" << u << " sum=" << sum << endl;
+    for(int i=0;i<(int)logprobs.size();i++){
+        partial_sum += exp(logprobs[i]);
+        //cout << "partial sum=" << partial_sum << endl;
+        if(u < partial_sum){
+            return i;
+        }
+    }
+    assert(false);
 }
 
 #endif

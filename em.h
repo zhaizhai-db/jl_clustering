@@ -6,14 +6,17 @@
 #include <Dense>
 
 #include "t_cluster.h"
+#include "gaussian_cluster.h"
 #include "distributions.h"
-//#include "jlprojection.h"
+#include "jlprojection.h"
 
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 ofstream fout("log.txt");
+
+typedef TCluster ClusterType;
 
 void save_init(MatrixXd data) {
 //    fout << 2 << endl;
@@ -24,7 +27,7 @@ void save_init(MatrixXd data) {
     fout << "Data:" << endl << data << endl;
 }
 
-void save(vector<Cluster> clusters, vector<int>* assignments=NULL) {
+void save(vector<ClusterType> & clusters, vector<int>* assignments=NULL) {
     int K = clusters.size();
     int N;
     if(assignments == NULL){
@@ -52,30 +55,7 @@ void save(vector<Cluster> clusters, vector<int>* assignments=NULL) {
     }
 }
 
-int sample(vector<double> logprobs){
-    double largest = logprobs[0];
-    for(int i=1;i<(int)logprobs.size();i++){
-        largest = max(largest,logprobs[i]);
-    }
-    double sum = 0.0;
-    for(int i=0;i<(int)logprobs.size();i++){
-        //cout << "logprobs[" << i << "]=" << logprobs[i] << endl;
-        logprobs[i] -= largest;
-        sum += exp(logprobs[i]);
-    }
-    double u = random_double(sum), partial_sum = 0.0;
-    //cout << "u=" << u << " sum=" << sum << endl;
-    for(int i=0;i<(int)logprobs.size();i++){
-        partial_sum += exp(logprobs[i]);
-        //cout << "partial sum=" << partial_sum << endl;
-        if(u < partial_sum){
-            return i;
-        }
-    }
-    assert(false);
-}
-
-vector<int> reassign_naive(vector<Cluster> & clusters, const MatrixXd & data, int S) {
+vector<int> reassign_naive(vector<ClusterType> & clusters, const MatrixXd & data, int S) {
     int N = data.rows();
     int K = clusters.size();
 
@@ -93,8 +73,8 @@ vector<int> reassign_naive(vector<Cluster> & clusters, const MatrixXd & data, in
     return assignments;
 }
 
-/*
-vector<int> reassign_jl(vector<Cluster> & clusters, const MatrixXd & data, int S) {
+
+vector<int> reassign_jl(vector<ClusterType> & clusters, const MatrixXd & data, int S) {
     int N = data.rows();
     int K = clusters.size();
     int D = data.cols();
@@ -113,7 +93,7 @@ vector<int> reassign_jl(vector<Cluster> & clusters, const MatrixXd & data, int S
 
     return assignments;
 }
-*/
+
 
 void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
     int N = data.rows();
@@ -122,9 +102,9 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         save_init(data);
     }
 
-    vector<Cluster> clusters;
+    vector<ClusterType> clusters;
     for (int k = 0; k < K; k++){
-        TCluster new_cluster(D, D + 5.0, 2.0, VectorXd::Zero(D), MatrixXd::Identity(D, D));
+        ClusterType new_cluster(D, D + 5.0, 2.0, VectorXd::Zero(D), MatrixXd::Identity(D, D));
         new_cluster.add(data.row(random_int(N)));
         clusters.push_back(new_cluster);
     }

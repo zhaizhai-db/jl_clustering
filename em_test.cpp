@@ -56,7 +56,7 @@ void libras_test(){
 }
 
 int main() {
-    //test1();
-    test2();
+    test1();
+    //test2();
     //libras_test();
 }

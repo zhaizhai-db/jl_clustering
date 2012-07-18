@@ -46,21 +46,22 @@ struct TCluster : public Cluster {
     MatrixXd recompute_sigma() {
         if (n > 0) {
             VectorXd xbar = sum / n;
-            MatrixXd Tn = T0 + n*sigma() + k0*n/(k0 + n)*(u0 - xbar)*(u0 - xbar).transpose();
+            MatrixXd covar = sum_squared / n - xbar * xbar.transpose();
+            MatrixXd Tn = T0 + n*covar + k0*n/(k0 + n)*(u0 - xbar)*(u0 - xbar).transpose();
             return Tn*(k0 + n + 1)/((k0 + n)*(v0 + n - d + 1));
         }
         return T0*(k0 + 1)/(k0*(v0 - d + 1));
     }
 
-    double log_pdf(const VectorXd& x) {
+    double log_pdf_norm(double norm_sq) {
         double v = v0 + n - d + 1;
         return gammaln((v + d)/2.0) - gammaln(v/2.0) \
                - 0.5*logdet() - 0.5*d*log(M_PI*v) \
-               - 0.5*(v + d)*log(1 + (1.0/v)*(x - mu()).transpose()*sigma_inverse()*(x - mu()));
+               - 0.5*(v + d)*log(1 + (1.0/v)*norm_sq);
     }
 
-    double log_posterior(const VectorXd& x) {
-        return log_pdf(x) + (n == 0 ? log(THETA + ALPHA*num_clusters) : log(n - ALPHA));
+    double log_posterior_norm(double norm_sq) {
+        return log_pdf_norm(norm_sq) + (n == 0 ? log(THETA + ALPHA*num_clusters) : log(n - ALPHA));
     }
 };
 

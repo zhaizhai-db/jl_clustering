@@ -24,13 +24,13 @@ struct GaussianCluster : public Cluster {
 
     // O(d^2) to compute the logpdf, except for computing the
     // determinant and inverse. These are O(d^3), but cached.
-    double log_pdf(const VectorXd& x) {
+    double log_pdf_norm(double norm_sq) {
         return -0.5*d*log(2*M_PI) - 0.5* \
-               - 0.5*(x - mu()).transpose()*sigma_inverse()*(x - mu());
+               - 0.5*norm_sq;
     }
 
-    double log_posterior(const VectorXd& x) {
-        return log_pdf(x) + log(n + THETA);
+    double log_posterior_norm(double norm_sq) {
+        return log_pdf_norm(norm_sq) + log(n + THETA);
     }
 };
 

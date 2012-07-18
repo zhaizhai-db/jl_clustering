@@ -7,7 +7,7 @@
 
 #include <Dense>
 
-#include "calculations.h"
+#include "cluster.h"
 #include "distributions.h"
 
 using Eigen::MatrixXd;
@@ -28,7 +28,10 @@ struct JLProjection {
     // estimate of |x|
     MatrixXd vecs_md;
 
-    vector<ClusterStats *> clusters;
+    // if y = vecs_md * x, then we want |y|^2 >= min_bound * |x|^2 w.h.p.
+    double min_bound;
+
+    vector<Cluster *> clusters;
     vector<MatrixXd> projections_md;
 
     JLProjection(int _m, int _d) :
@@ -38,9 +41,10 @@ struct JLProjection {
             for (int j = 0; j < d; j++)
                 vecs_md(i, j) = gaussian() / sqrt(m);
         }
+        min_bound = 0.5; // TODO: compute for real
     }
 
-    void add_cluster(ClusterStats * cluster) {
+    void add_cluster(Cluster * cluster) {
         clusters.push_back(cluster);
         // if U = cluster->cholesky(), then estimating x^t sigma^-1 x
         // is the same as estimating |Ux|^2
@@ -55,49 +59,19 @@ struct JLProjection {
 
         for (int i = 0; i < (int)clusters.size(); i++) {
             VectorXd x_m = projections_md[i] * (x_d - clusters[i]->mu());
-            double p = gaussian_logpdf(x_m.dot(x_m), d);
-            p -= 0.5 * clusters[i]->log_abs_det();
-            est_loglikelies.push_back(p);
-        }
-
-        // renormalize
-        double max_log = est_loglikelies[0];
-        for (int i = 0; i < (int)est_loglikelies.size(); i++)
-            max_log = max(est_loglikelies[i], max_log);
-
-        double sum_prob = 0.0;
-        for (int i = 0; i < (int)est_loglikelies.size(); i++) {
-            double prob = exp(est_loglikelies[i] - max_log);
-            prob *= clusters[i]->n + THETA;
-            est_probs.push_back(prob);
-            sum_prob += prob;
+            est_loglikelies.push_back(
+                clusters[i]->log_posterior_norm(min_bound * x_m.dot(x_m)));
         }
 
         while (true) {
-            double t = random_double(sum_prob);
-            int cur = 0;
+            int prop = sample(est_loglikelies);
+            double true_logprob = clusters[prop]->log_posterior(x_d);
 
-            while (t > est_probs[cur]) {
-                t -= est_probs[cur];
-                cur++;
-            }
-
-            assert(cur < (int)clusters.size());
-
-            double log_discrep = clusters[cur]->logpdf(x_d)
-                - est_loglikelies[cur] + max_log;
-            // TODO: eventually check that the discrepancy is not large
-            // assert(abs(log_discrep) < SOMETHING);
-
-            double accept = ACCEPT_MULTIPLIER * exp(log_discrep);
-            cout << "est_loglikelies:" << endl << "  ";
-            for (int i = 0; i < (int)est_loglikelies.size(); i++){
-                cout << est_loglikelies[i] - max_log << " ";
-            }
-            cout << endl;
-            cout << "accept probability " << accept << endl;
+            double accept = exp(true_logprob - est_loglikelies[prop]);
             if (random_double() < accept)
-                return cur;
+                return prop;
+
+            est_loglikelies[prop] = true_logprob;
         }
 
         assert(false);
