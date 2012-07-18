@@ -1,7 +1,8 @@
 %% generate data
-K = 3;
-N = 30;
-D = 2;
+clear;
+K = 3; Korig = K;
+N = 30; Norig = N;
+D = 2; Dorig = D;
 centers = 10*randn(K,D);
 shapes = randn(K,D,D);
 points = zeros(N,D);
@@ -14,9 +15,9 @@ end
 clf;
 plot(points(:,1),points(:,2),'.');
 %% write to file
-K = 3;
-N = 30;
-D = 2;
+K = Korig;
+N = Norig;
+D = Dorig;
 fout = fopen('data.in','w');
 fprintf(fout,'%d %d %d\n',N,D,K);
 fprintf(fout,'%f\n',points');
@@ -25,7 +26,7 @@ fprintf(fout,'%f\n',points');
 %% read in file
 !python fixlog.py
 fin = fopen('fixedlog.txt','r');
-while ~feof(fid)
+while ~feof(fin)
     status = fscanf(fin,'%d',1);
     if isempty(status)
         break

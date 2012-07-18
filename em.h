@@ -2,18 +2,18 @@
 #include <vector>
 #include <cmath>
 #include <assert.h>
-#include "calculations.h"
-#include "distributions.h"
 
 #include <Dense>
+
+#include "calculations.h"
+#include "distributions.h"
+#include "jlprojection.h"
 
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 ofstream fout("log.txt");
-
-#define S (1)
 
 void save_init(MatrixXd data) {
 //    fout << 2 << endl;
@@ -75,7 +75,47 @@ int sample(vector<double> logprobs){
     assert(false);
 }
 
-void em(MatrixXd data, int K, int T=-1, bool debug=false) {
+vector<int> reassign_naive(vector<ClusterStats> & clusters,
+                           const MatrixXd & data, int S) {
+    int N = data.rows();
+    int K = clusters.size();
+
+    vector<int> assignments;
+    for (int n = 0; n < N; n++) {
+        vector<double> logprobs;
+        for (int k = 0; k < K; k++) {
+            logprobs.push_back(clusters[k].logpdf_em(data.row(n)));
+        }
+        for(int s = 0; s < S; s++){
+            assignments.push_back(sample(logprobs));
+        }
+    }
+
+    return assignments;
+}
+
+vector<int> reassign_jl(vector<ClusterStats> & clusters,
+                        const MatrixXd & data, int S) {
+    int N = data.rows();
+    int K = clusters.size();
+    int D = data.cols();
+
+    vector<int> assignments;
+    JLProjection jlp(get_proj_dim(N, D, K), D);
+
+    for (int i = 0; i < (int)clusters.size(); i++)
+        jlp.add_cluster(&clusters[i]);
+
+    for (int i = 0; i < N; i++){
+        for(int s = 0; s < S; s++){
+            assignments.push_back(jlp.assign_cluster(data.row(i)));
+        }
+    }
+
+    return assignments;
+}
+
+void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
     int N = data.rows();
     int D = data.cols();
     if (debug) {
@@ -94,18 +134,8 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
     }
 
     double loglikelihood_old;
-    for(int t = 0; t != T; t++) { //TODO deal with case when T == -1
-        //update assignments
-        vector<int> assignments;
-        for (int n = 0; n < N; n++) {
-            vector<double> logprobs;
-            for (int k = 0; k < K; k++) {
-                logprobs.push_back(clusters[k].logpdf_em(data.row(n)));
-            }
-            for(int s = 0; s < S; s++){
-                assignments.push_back(sample(logprobs));
-            }
-        }
+    for(int t = 0; t != T; t++) {
+        vector<int> assignments = reassign_jl(clusters, data, S);
 
         //update cluster parameters
         for (int k = 0; k < K; k++) {

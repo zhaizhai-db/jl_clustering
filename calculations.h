@@ -75,13 +75,16 @@ struct ClusterStats {
         sum_squared = 1e-6*MatrixXd::Identity(d,d);
     }
 
+    double log_abs_det() {
+        HouseholderQR<MatrixXd> qr(sigma()); // TODO: cache
+        return qr.logAbsDeterminant();
+    }
+
     // O(d^2) to compute the logpdf
+    // TODO: cache stuff
     double logpdf(VectorXd x) {
-        VectorXd mu = sum/n;
-        MatrixXd sigma = sum_squared/n - mu*mu.transpose();
-        HouseholderQR<MatrixXd> qr(sigma); // TODO this is O(d^3)
-        return -0.5*d*log(2*M_PI) - 0.5*qr.logAbsDeterminant() \
-            - 0.5*(x - mu).transpose()*sigma.inverse()*(x - mu);
+        return -0.5*d*log(2*M_PI) - 0.5*log_abs_det() \
+            - 0.5*(x - mu()).transpose() * sigma().inverse() * (x - mu());
         // inverse() is also O(d^3)
     }
 

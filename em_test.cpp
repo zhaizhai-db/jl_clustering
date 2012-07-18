@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
+
 #include "em.h"
 
 #include <Dense>
@@ -22,17 +24,39 @@ void test2(){
     int N,D,K;
     fin >> N >> D >> K;
     MatrixXd data(N,D);
-    for(int n=0;n<N;n++)
+    for(int n=0;n<N;n++){
         for(int d=0;d<D;d++){
             double x;
             fin >> x;
             cout << "x=" << x << endl;
             data(n,d)=x;
         }
-    em(data,K,-1,true);
+    }
+    em(data,K,-1,true,1);
 }
 
-int main(){
-//  test1();
+void libras_test(){
+    ifstream fin("modified_libras.data");
+    int N,D,K;
+    fin >> N >> D >> K;
+    MatrixXd data(N,D);
+    vector<int> labels;
+    for(int n=0;n<N;n++){
+        for(int d=0;d<D;d++){
+            double x;
+            fin >> x;
+            data(n,d)=x;
+        }
+        int l;
+        fin >> l;
+        labels.push_back(l);
+        cout << "label=" << l << endl;
+    }
+    em(data,K,50,true);
+}
+
+int main() {
+    //test1();
     test2();
+    //libras_test();
 }
