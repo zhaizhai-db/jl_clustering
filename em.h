@@ -14,9 +14,9 @@ using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-ofstream fout("log.txt");
+typedef GaussianCluster ClusterType;
 
-typedef TCluster ClusterType;
+ofstream fout("log.txt");
 
 void save_init(MatrixXd data) {
 //    fout << 2 << endl;
@@ -43,7 +43,7 @@ void save(vector<ClusterType> & clusters, vector<int>* assignments=NULL) {
             "Log type 1: current_iteration") << endl;
     fout << "N: " << N << ", D: " << D << ", K: " << K << endl;
     for (int k = 0; k < K; k++) {
-        fout << "Cluster mu and sigma:" << endl;
+        fout << "ClusterType mu and sigma:" << endl;
         fout << clusters[k].mu() << endl;
         fout << clusters[k].sigma() << endl;
     }
@@ -104,7 +104,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
 
     vector<ClusterType> clusters;
     for (int k = 0; k < K; k++){
-        ClusterType new_cluster(D, D + 5.0, 2.0, VectorXd::Zero(D), MatrixXd::Identity(D, D));
+        ClusterType new_cluster(D);
         new_cluster.add(data.row(random_int(N)));
         clusters.push_back(new_cluster);
     }

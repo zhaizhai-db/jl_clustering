@@ -19,14 +19,16 @@ struct GaussianCluster : public Cluster {
     }
 
     MatrixXd recompute_sigma() {
+        if (n < 2) {
+            return MatrixXd::Identity(d, d);
+        }
         return sum_squared / n - sum * sum.adjoint() / n / n;
     }
 
     // O(d^2) to compute the logpdf, except for computing the
     // determinant and inverse. These are O(d^3), but cached.
     double log_pdf_norm(double norm_sq) {
-        return -0.5*d*log(2*M_PI) - 0.5* \
-               - 0.5*norm_sq;
+        return -0.5*d*log(2*M_PI) - 0.5*logdet() - 0.5*norm_sq;
     }
 
     double log_posterior_norm(double norm_sq) {
