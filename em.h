@@ -102,7 +102,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
 
     vector<Cluster*> clusters;
     for (int k = 0; k < K; k++){
-        Cluster* new_cluster = new GaussianCluster(D);
+        Cluster* new_cluster = new TCluster(D, D + 2.0, 0.1, VectorXd::Zero(D), MatrixXd::Identity(D, D));
         new_cluster->add(data.row(random_int(N)));
         clusters.push_back(new_cluster);
     }
