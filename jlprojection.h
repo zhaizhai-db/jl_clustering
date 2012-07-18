@@ -18,7 +18,7 @@ const double EPS = 1e-9;
 const double ACCEPT_MULTIPLIER = 0.98;
 
 int get_proj_dim(int n, int d, int k) {
-    return d - 1;
+    return 10;
 }
 
 struct JLProjection {
@@ -53,32 +53,25 @@ struct JLProjection {
         vector<double> est_loglikelies;
         vector<double> est_probs;
 
-        for (int i = 0; i < clusters.size(); i++) {
-            VectorXd x_m = projections_md[i] * x_d;
+        for (int i = 0; i < (int)clusters.size(); i++) {
+            VectorXd x_m = projections_md[i] * (x_d - clusters[i]->mu());
             double p = gaussian_logpdf(x_m.dot(x_m), d);
+            p -= 0.5 * clusters[i]->log_abs_det();
             est_loglikelies.push_back(p);
         }
 
         // renormalize
         double max_log = est_loglikelies[0];
-        for (int i = 0; i < est_loglikelies.size(); i++)
+        for (int i = 0; i < (int)est_loglikelies.size(); i++)
             max_log = max(est_loglikelies[i], max_log);
 
         double sum_prob = 0.0;
-        for (int i = 0; i < est_loglikelies.size(); i++) {
+        for (int i = 0; i < (int)est_loglikelies.size(); i++) {
             double prob = exp(est_loglikelies[i] - max_log);
             prob *= clusters[i]->n + THETA;
             est_probs.push_back(prob);
             sum_prob += prob;
         }
-
-        /*
-        for (int i = 0; i < clusters.size(); i++) {
-            cout << "est: " << est_probs[i] / sum_prob << ", "
-                 << est_loglikelies[i] << ", "
-                 << exp(clusters[i]->logpdf(x_d)) << endl;
-        }
-        */
 
         while (true) {
             double t = random_double(sum_prob);
@@ -89,7 +82,7 @@ struct JLProjection {
                 cur++;
             }
 
-            assert(cur < clusters.size());
+            assert(cur < (int)clusters.size());
 
             double log_discrep = clusters[cur]->logpdf(x_d)
                 - est_loglikelies[cur] + max_log;
@@ -97,6 +90,12 @@ struct JLProjection {
             // assert(abs(log_discrep) < SOMETHING);
 
             double accept = ACCEPT_MULTIPLIER * exp(log_discrep);
+            cout << "est_loglikelies:" << endl << "  ";
+            for (int i = 0; i < (int)est_loglikelies.size(); i++){
+                cout << est_loglikelies[i] - max_log << " ";
+            }
+            cout << endl;
+            cout << "accept probability " << accept << endl;
             if (random_double() < accept)
                 return cur;
         }

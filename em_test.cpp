@@ -32,7 +32,7 @@ void test2(){
             data(n,d)=x;
         }
     }
-    em(data,K,50,true);
+    em(data,K,-1,true,1);
 }
 
 void libras_test(){
@@ -55,8 +55,8 @@ void libras_test(){
     em(data,K,50,true);
 }
 
-int main(){
-//  test1();
-    //test2();
-    libras_test();
+int main() {
+    //test1();
+    test2();
+    //libras_test();
 }
