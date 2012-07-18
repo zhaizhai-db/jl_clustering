@@ -50,12 +50,13 @@ struct JLProjection {
     }
 
     int assign_cluster(VectorXd x_d) {
+        VectorXd y_d = x_d - clusters[i]->mu();
         vector<double> est_loglikelies;
         vector<double> est_probs;
 
         for (int i = 0; i < clusters.size(); i++) {
-            VectorXd x_m = projections_md[i] * (x_d - clusters[i]->mu());
-            double p = gaussian_logpdf(x_m.dot(x_m), d);
+            VectorXd y_m = projections_md[i] * y_d;
+            double p = gaussian_logpdf(y_m.dot(y_m), d);
             p -= 0.5 * clusters[i]->log_abs_det();
             est_loglikelies.push_back(p);
         }
@@ -84,7 +85,7 @@ struct JLProjection {
 
             assert(cur < clusters.size());
 
-            double log_discrep = clusters[cur]->logpdf(x_d)
+            double log_discrep = clusters[cur]->logpdf(y_d)
                 - est_loglikelies[cur] + max_log;
             // TODO: eventually check that the discrepancy is not large
             // assert(abs(log_discrep) < SOMETHING);
