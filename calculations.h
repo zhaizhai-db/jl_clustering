@@ -49,9 +49,9 @@ struct ClusterStats {
         return sum_squared / n - sum * sum.adjoint() / n / n;
     }
 
+    // returns upper triangular U such that U^TU = sigma^-1
     MatrixXd cholesky() {
-        // TODO: figure out which one we actually want
-        return sigma().inverse().llt().matrixL();
+        return sigma().inverse().llt().matrixU();
     }
 
     void add(VectorXd x) {

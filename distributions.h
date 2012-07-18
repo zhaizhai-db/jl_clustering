@@ -58,8 +58,10 @@ double gammaln(double x) {
     return -tmp + log(2.50662827465*ser);
 }
 
-double gaussian_logpdf(VectorXd x) {
-    return -0.5 * (x.rows() * log (2 * M_PI) + x.dot(x));
+// returns the logpdf of a standard d-dimensional Gaussian at x for
+// |x|^2 = norm_squared
+double gaussian_logpdf(double norm_squared, int dim) {
+    return -0.5 * (dim * log (2 * M_PI) + norm_squared);
 }
 
 #endif
