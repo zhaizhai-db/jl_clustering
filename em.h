@@ -14,8 +14,6 @@ using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-typedef GaussianCluster ClusterType;
-
 ofstream fout("log.txt");
 
 void save_init(MatrixXd data) {
@@ -27,7 +25,7 @@ void save_init(MatrixXd data) {
     fout << "Data:" << endl << data << endl;
 }
 
-void save(vector<ClusterType> & clusters, vector<int>* assignments=NULL) {
+void save(vector<Cluster*> & clusters, vector<int>* assignments=NULL) {
     int K = clusters.size();
     int N;
     if(assignments == NULL){
@@ -36,16 +34,16 @@ void save(vector<ClusterType> & clusters, vector<int>* assignments=NULL) {
     else {
         N = assignments->size();
     }
-    int D = clusters[0].get_d();
+    int D = clusters[0]->get_d();
 //    fout << (assignments == NULL ? 0 : 1) << endl;
 //    fout << N << " " << D << " " << K << endl;
     fout << (assignments == NULL ? "Log type 0: initial_clusters" :
             "Log type 1: current_iteration") << endl;
     fout << "N: " << N << ", D: " << D << ", K: " << K << endl;
     for (int k = 0; k < K; k++) {
-        fout << "ClusterType mu and sigma:" << endl;
-        fout << clusters[k].mu() << endl;
-        fout << clusters[k].sigma() << endl;
+        fout << "Cluster mu and sigma:" << endl;
+        fout << clusters[k]->mu() << endl;
+        fout << clusters[k]->sigma() << endl;
     }
     if (assignments != NULL) {
         fout << "Assignments:" << endl;
@@ -55,7 +53,7 @@ void save(vector<ClusterType> & clusters, vector<int>* assignments=NULL) {
     }
 }
 
-vector<int> reassign_naive(vector<ClusterType> & clusters, const MatrixXd & data, int S) {
+vector<int> reassign_naive(vector<Cluster*> & clusters, const MatrixXd & data, int S) {
     int N = data.rows();
     int K = clusters.size();
 
@@ -63,7 +61,7 @@ vector<int> reassign_naive(vector<ClusterType> & clusters, const MatrixXd & data
     for (int n = 0; n < N; n++) {
         vector<double> logprobs;
         for (int k = 0; k < K; k++) {
-            logprobs.push_back(clusters[k].log_posterior(data.row(n)));
+            logprobs.push_back(clusters[k]->log_posterior(data.row(n)));
         }
         for(int s = 0; s < S; s++){
             assignments.push_back(sample(logprobs));
@@ -74,7 +72,7 @@ vector<int> reassign_naive(vector<ClusterType> & clusters, const MatrixXd & data
 }
 
 
-vector<int> reassign_jl(vector<ClusterType> & clusters, const MatrixXd & data, int S) {
+vector<int> reassign_jl(vector<Cluster*> & clusters, const MatrixXd & data, int S) {
     int N = data.rows();
     int K = clusters.size();
     int D = data.cols();
@@ -83,7 +81,7 @@ vector<int> reassign_jl(vector<ClusterType> & clusters, const MatrixXd & data, i
     JLProjection jlp(get_proj_dim(N, D, K), D);
 
     for (int i = 0; i < (int)clusters.size(); i++)
-        jlp.add_cluster(&clusters[i]);
+        jlp.add_cluster(clusters[i]);
 
     for (int i = 0; i < N; i++){
         for(int s = 0; s < S; s++){
@@ -102,10 +100,10 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         save_init(data);
     }
 
-    vector<ClusterType> clusters;
+    vector<Cluster*> clusters;
     for (int k = 0; k < K; k++){
-        ClusterType new_cluster(D);
-        new_cluster.add(data.row(random_int(N)));
+        Cluster* new_cluster = new GaussianCluster(D);
+        new_cluster->add(data.row(random_int(N)));
         clusters.push_back(new_cluster);
     }
     if (debug) {
@@ -118,11 +116,11 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
 
         //update cluster parameters
         for (int k = 0; k < K; k++) {
-            clusters[k].clear();
+            clusters[k]->clear();
         }
         for (int n = 0; n < N; n++) {
             for(int s = 0; s < S; s++){
-                clusters[assignments[S*n+s]].add(data.row(n));
+                clusters[assignments[S*n+s]]->add(data.row(n));
             }
         }
 
@@ -130,7 +128,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         double loglikelihood = 0.0;
         for(int n = 0; n < N; n++){
             for(int s = 0; s < S; s++){
-                loglikelihood += clusters[assignments[S*n+s]].log_pdf(data.row(n)) / S;
+                loglikelihood += clusters[assignments[S*n+s]]->log_posterior(data.row(n)) / S;
             }
         }
         cout << loglikelihood << endl;
