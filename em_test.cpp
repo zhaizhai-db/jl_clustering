@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "em.h"
 
 #include <Dense>
@@ -16,6 +17,22 @@ void test1(){
   em(data,2,5,true);
 }
 
+void test2(){
+    ifstream fin("data.in");
+    int N,D,K;
+    fin >> N >> D >> K;
+    MatrixXd data(N,D);
+    for(int n=0;n<N;n++)
+        for(int d=0;d<D;d++){
+            double x;
+            fin >> x;
+            cout << "x=" << x << endl;
+            data(n,d)=x;
+        }
+    em(data,K,50,true);
+}
+
 int main(){
-  test1();
+//  test1();
+    test2();
 }

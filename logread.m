@@ -1,3 +1,24 @@
+%% generate data
+K = 3;
+N = 30;
+D = 2;
+centers = 10*randn(K,D);
+shapes = randn(K,D,D);
+points = zeros(N,D);
+for n=1:N
+    k = randi(K,1,1);
+    points(n,:) = squeeze(centers(k,:))' + ...
+        squeeze(shapes(k,:,:))*randn(D,1);
+end
+%%
+clf;
+plot(points(:,1),points(:,2),'.');
+%% write to file
+fout = fopen('data.in','w');
+fprintf(fout,'%d %d %d\n',N,D,K);
+fprintf(fout,'%f\n',points');
+%% run program
+!./a.out
 %% read in file
 !python fixlog.py
 fin = fopen('fixedlog.txt','r');
