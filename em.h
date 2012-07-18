@@ -5,9 +5,9 @@
 
 #include <Dense>
 
-#include "calculations.h"
+#include "t_cluster.h"
 #include "distributions.h"
-#include "jlprojection.h"
+//#include "jlprojection.h"
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -24,7 +24,7 @@ void save_init(MatrixXd data) {
     fout << "Data:" << endl << data << endl;
 }
 
-void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
+void save(vector<Cluster> clusters, vector<int>* assignments=NULL) {
     int K = clusters.size();
     int N;
     if(assignments == NULL){
@@ -33,7 +33,7 @@ void save(vector<ClusterStats> clusters, vector<int>* assignments=NULL) {
     else {
         N = assignments->size();
     }
-    int D = clusters[0].d;
+    int D = clusters[0].get_d();
 //    fout << (assignments == NULL ? 0 : 1) << endl;
 //    fout << N << " " << D << " " << K << endl;
     fout << (assignments == NULL ? "Log type 0: initial_clusters" :
@@ -75,8 +75,7 @@ int sample(vector<double> logprobs){
     assert(false);
 }
 
-vector<int> reassign_naive(vector<ClusterStats> & clusters,
-                           const MatrixXd & data) {
+vector<int> reassign_naive(vector<Cluster> & clusters, const MatrixXd & data) {
     int N = data.rows();
     int K = clusters.size();
 
@@ -84,7 +83,7 @@ vector<int> reassign_naive(vector<ClusterStats> & clusters,
     for (int n = 0; n < N; n++) {
         vector<double> logprobs;
         for (int k = 0; k < K; k++) {
-            logprobs.push_back(clusters[k].logpdf_em(data.row(n)));
+            logprobs.push_back(clusters[k].log_posterior(data.row(n)));
         }
 
         assignments.push_back(sample(logprobs));
@@ -93,8 +92,8 @@ vector<int> reassign_naive(vector<ClusterStats> & clusters,
     return assignments;
 }
 
-vector<int> reassign_jl(vector<ClusterStats> & clusters,
-                        const MatrixXd & data) {
+/*
+vector<int> reassign_jl(vector<Cluster> & clusters, const MatrixXd & data) {
     int N = data.rows();
     int K = clusters.size();
     int D = data.cols();
@@ -110,6 +109,7 @@ vector<int> reassign_jl(vector<ClusterStats> & clusters,
 
     return assignments;
 }
+*/
 
 void em(MatrixXd data, int K, int T=-1, bool debug=false) {
     int N = data.rows();
@@ -118,11 +118,10 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
         save_init(data);
     }
 
-    vector<ClusterStats> clusters;
+    vector<Cluster> clusters;
     for (int k = 0; k < K; k++){
-        ClusterStats new_cluster(D, 0.0, 0.0, VectorXd(D), MatrixXd(D, D));
+        TCluster new_cluster(D, D + 5.0, 2.0, VectorXd::Zero(D), MatrixXd::Identity(D, D));
         new_cluster.add(data.row(random_int(N)));
-        new_cluster.sum_squared += MatrixXd::Identity(D,D);
         clusters.push_back(new_cluster);
     }
     if (debug) {
@@ -130,7 +129,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false) {
     }
 
     for(int t = 0; t != T; t++) { //TODO deal with case when T == -1
-        vector<int> assignments = reassign_jl(clusters, data);
+        vector<int> assignments = reassign_naive(clusters, data);
 
         //update cluster parameters
         for (int k = 0; k < K; k++) {

@@ -1,2 +1,2 @@
 #!/bin/sh
-g++ em_test.cpp -I ./Eigen
+g++ em.h -I ./Eigen
