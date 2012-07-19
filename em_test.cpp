@@ -77,7 +77,7 @@ void libras_test(){
 
     cout << "log posterior from true labels: " << log_posterior << endl;
 
-    em(data,K,-1,true);
+    em(data,K,-1,true,5);
 }
 
 int main() {
