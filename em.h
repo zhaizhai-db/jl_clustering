@@ -94,7 +94,9 @@ int reassign_jl(const MatrixXd& data, const vector<Cluster*>& clusters,
     int K = clusters.size();
     int D = data.cols();
 
+    cout << "forming JL projectors..." << flush;
     JLProjection jlp(get_proj_dim(N, D, K), D);
+    cout << " Done." << endl;
 
     for (int k = 0; k < K; k++)
         jlp.add_cluster(clusters[k]);
@@ -128,14 +130,19 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
 
     int N = data.rows();
     int D = data.cols();
+    cout << "N: " << N << ", D: " << D << endl;
 
     if (debug) {
+        cout << "Saving initial data for debugging..." << flush;
         save_init(data);
+        cout << " Done." << endl;
     }
 
+    cout << "Computing mean and covariance of data set..." << endl;
     VectorXd total_mean = VectorXd::Zero(D);
     MatrixXd total_covar = MatrixXd::Zero(D, D);
     for (int i = 0; i < N; i++) {
+        cout << "i = " << i << endl;
         VectorXd x = data.row(i);
         total_mean += x;
         total_covar += x * x.transpose();
@@ -144,6 +151,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
     total_covar /= N;
 
     for (int k = 0; k < K; k++){
+        cout << "Creating cluster " << k << endl;
         // TODO: maybe add a small multiple of identity to total_covar
         Cluster* new_cluster = new TCluster(
             D, D + 2.0, 0.1, total_mean, total_covar);
@@ -165,7 +173,8 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
 
     double loglikelihood_old;
     for(int t = 0; t != T; t++) {
-        if (reassign_jl(data, clusters, pre_assignments, S, &assignments) != 0) {
+        cout << "Starting iteration " << t << "." << endl;
+        if (reassign_naive(data, clusters, pre_assignments, S, &assignments) != 0) {
             return 1;
         }
 
@@ -182,6 +191,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         //compute loglikelihood to test convergence
         double loglikelihood = 0.0;
         for(int n = 0; n < N; n++){
+            cout << "Considering data point " << n << "." << endl;
             double log_posteriors[S];
             for (int s = 0; s < S; s++)
                 log_posteriors[s] = clusters[assignments[S*n + s]]->log_posterior(data.row(n));
@@ -198,7 +208,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
 
             loglikelihood += log(prob);
         }
-        //cout << loglikelihood << endl;
+        cout << loglikelihood << endl;
 
         if (t == T - 1 || (T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)) {
             cout << "[";

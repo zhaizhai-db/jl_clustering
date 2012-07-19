@@ -11,9 +11,12 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 int main(int argc, char **argv) {
+    char prefix[1000];
+    sprintf(prefix,"32x32/");
     char filename[1000];
     assert(argc >= 2);
-    sprintf(filename,"%s.train",argv[1]);
+    sprintf(filename,"%s%s.train",prefix,argv[1]);
+
     printf("Reading training data...\n");
     FILE *ftrain = fopen(filename,"r");
     int N, D, K;
@@ -30,6 +33,7 @@ int main(int argc, char **argv) {
         labels_train[n] = temp_i;
     }
     printf("Done reading training data, starting training...\n");
+    
     long long int time1 = clock();
     vector<int> assignments;
     vector<Cluster*> clusters;
@@ -42,7 +46,7 @@ int main(int argc, char **argv) {
     fclose(ftrain);
 
     printf("Reading holdout data...\n");
-    sprintf(filename,"%s.holdout",argv[1]);
+    sprintf(filename,"%s%s.holdout",prefix,argv[1]);
     FILE *fholdout = fopen(filename,"r");
     int N2, D2, K2;
     fscanf(fholdout,"%d%d%d",&N2,&D2,&K2);

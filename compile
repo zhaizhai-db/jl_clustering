@@ -1,0 +1,2 @@
+#!/bin/bash
+g++ $1.cpp -O3 -I ./Eigen -Wall -o $1
