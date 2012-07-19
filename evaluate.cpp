@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     double temp_f; int temp_i;
     for(int n=0;n<N;n++){
         for(int d=0;d<D;d++){
-            fscanf(ftrain,"%f",&temp_f);
+            fscanf(ftrain,"%lf",&temp_f);
             data_train(n,d) = temp_f;
         }
         fscanf(ftrain,"%d",&temp_i);
@@ -31,7 +31,12 @@ int main(int argc, char **argv) {
     }
     printf("Done reading training data, starting training...\n");
     long long int time1 = clock();
-    pair<vector<int>, vector<Cluster*> > em_output = em(data_train, K, &labels_train, -1, false, 1);
+    vector<int> assignments;
+    vector<Cluster*> clusters;
+    if (em(data_train, K, labels_train, &assignments, &clusters, -1, false, 1) != 0) {
+        printf("Error: em returned a non-zero status code.\n");
+        return 1;
+    }
     long long int time2 = clock();
     printf("Done training: took %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
     fclose(ftrain);
@@ -47,15 +52,18 @@ int main(int argc, char **argv) {
     vector<int> labels_holdout = vector<int>(N2,-1);
     for(int n=0;n<N2;n++){
         for(int d=0;d<D2;d++){
-            fscanf(fin,"%f",&temp_f);
+            fscanf(fholdout,"%lf",&temp_f);
             data_holdout(n,d)=temp_f;
         }
-        fscanf(fin,"%d",&temp_i);
+        fscanf(fholdout,"%d",&temp_i);
         labels_holdout[n]=temp_i;
     }
     printf("Done reading holdout data, starting predictions...\n");
     long long int time3 = clock();
-    vector<int> labels_holdout_predicted = reassign_jl(em_output.second, data_holdout, vector<int>(N2,-1), 1);
+    vector<int> labels_holdout_predicted;
+    if (reassign_jl(data_holdout, clusters, vector<int>(N2,-1), 1, &labels_holdout_predicted) != 0) {
+        printf("Error: reassign_jl returned a non-zero status code.\n");
+    }
     long long int time4 = clock();
     printf("Done assigning predictions: took %.4f seconds.\n", (time4-time3)/(float)CLOCKS_PER_SEC);
 

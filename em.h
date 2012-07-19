@@ -25,7 +25,7 @@ void save_init(MatrixXd data) {
     fout << "Data:" << endl << data << endl;
 }
 
-void save(vector<Cluster*> & clusters, vector<int>* assignments=NULL) {
+void save(vector<Cluster*>& clusters, vector<int>* assignments=NULL) {
     int K = clusters.size();
     int N;
     if(assignments == NULL){
@@ -53,15 +53,20 @@ void save(vector<Cluster*> & clusters, vector<int>* assignments=NULL) {
     }
 }
 
-vector<int> reassign_naive(vector<Cluster*> & clusters, const MatrixXd & data, vector<int>* pre_assignments, int S) {
+int reassign_naive(const MatrixXd& data, const vector<Cluster*>& clusters,
+                   const vector<int>& pre_assignments, int S, vector<int>* assignments) {
+    if (assignments == NULL) {
+        return 1;
+    }
+    assignments->clear();
+
     int N = data.rows();
     int K = clusters.size();
 
-    vector<int> assignments;
     for (int n = 0; n < N; n++) {
         if(pre_assignments[n] != -1){
             for(int s = 0; s < S; s++){
-                clusters[(*pre_assignments)[n]].push_back(data.row(n));
+                assignments->push_back(pre_assignments[n]);
             }
             continue;
         }
@@ -70,48 +75,59 @@ vector<int> reassign_naive(vector<Cluster*> & clusters, const MatrixXd & data, v
             logprobs.push_back(clusters[k]->log_posterior(data.row(n)));
         }
         for(int s = 0; s < S; s++){
-            assignments.push_back(sample(logprobs));
+            assignments->push_back(sample(logprobs));
         }
     }
 
-    return assignments;
+    return 0;
 }
 
 
-vector<int> reassign_jl(vector<Cluster*> & clusters, const MatrixXd & data, vector<int>* pre_assignments, int S) {
+int reassign_jl(const MatrixXd& data, const vector<Cluster*>& clusters,
+                const vector<int>& pre_assignments, int S, vector<int>* assignments) {
+    if (assignments == NULL) {
+        return 1;
+    }
+    assignments->clear();
+
     int N = data.rows();
     int K = clusters.size();
     int D = data.cols();
 
-    vector<int> assignments;
     JLProjection jlp(get_proj_dim(N, D, K), D);
 
-    for (int i = 0; i < (int)clusters.size(); i++)
-        jlp.add_cluster(clusters[i]);
+    for (int k = 0; k < K; k++)
+        jlp.add_cluster(clusters[k]);
 
-    for (int i = 0; i < N; i++){
+    for (int n = 0; n < N; n++){
         if(pre_assignments[n] != -1){
             for(int s = 0; s < S; s++){
-                clusters[(*pre_assignments)[n]].push_back(data.row(n));
+                assignments->push_back(pre_assignments[n]);
             }
             continue;
         }
         for(int s = 0; s < S; s++){
-            assignments.push_back(jlp.assign_cluster(data.row(i)));
+            assignments->push_back(jlp.assign_cluster(data.row(n)));
         }
     }
 
-    return assignments;
+    return 0;
 }
 
 
-pair<vector<int>, vector<Cluster*> > em(MatrixXd data, int K, vector<int>* pre_assignments, \
-        int T=-1, bool debug=false, int S=1) {
+int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
+       vector<int>* assignments_ptr, vector<Cluster*>* clusters_ptr, \
+       int T=-1, bool debug=false, int S=1) {
+    if (assignments_ptr == NULL || clusters_ptr == NULL) {
+        return 1;
+    }
+    vector<int>& assignments = *assignments_ptr;
+    vector<Cluster*>& clusters = *clusters_ptr;
+    assignments.clear();
+    clusters.clear();
+
     int N = data.rows();
     int D = data.cols();
-    if(pre_assignments == NULL){
-        *pre_assignments = vector<int>(N,-1);
-    }
 
     if (debug) {
         save_init(data);
@@ -127,7 +143,6 @@ pair<vector<int>, vector<Cluster*> > em(MatrixXd data, int K, vector<int>* pre_a
     total_mean /= N;
     total_covar /= N;
 
-    vector<Cluster*> clusters;
     for (int k = 0; k < K; k++){
         // TODO: maybe add a small multiple of identity to total_covar
         Cluster* new_cluster = new TCluster(
@@ -150,7 +165,9 @@ pair<vector<int>, vector<Cluster*> > em(MatrixXd data, int K, vector<int>* pre_a
 
     double loglikelihood_old;
     for(int t = 0; t != T; t++) {
-        vector<int> assignments = reassign_jl(clusters, data, pre_assignments, S);
+        if (reassign_jl(data, clusters, pre_assignments, S, &assignments) != 0) {
+            return 1;
+        }
 
         //update cluster parameters
         for (int k = 0; k < K; k++) {
@@ -200,6 +217,6 @@ pair<vector<int>, vector<Cluster*> > em(MatrixXd data, int K, vector<int>* pre_a
             save(clusters, &assignments);
         }
 
-        return pair<vector<int>, vector<Cluster*> >(assignments, clusters);
     }
+    return 0;
 }
