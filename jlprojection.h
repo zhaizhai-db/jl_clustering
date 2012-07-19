@@ -41,8 +41,9 @@ JLProjection(int _m, int _d, double error_prob=1e-6) :
         m(_m), d(_d) {
         vecs_md = MatrixXd(m, d);
         for (int i = 0; i < m; i++) {
-            for (int j = 0; j < d; j++)
-                vecs_md(i, j) = gaussian() / sqrt(m);
+            for (int j = 0; j < d; j++){
+                vecs_md(i, j) = (2.0*random_int(2)-1) / sqrt(m);
+            }
         }
         min_bound = compute_min_bound(m, error_prob);
     }

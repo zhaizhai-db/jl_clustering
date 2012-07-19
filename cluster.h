@@ -17,6 +17,8 @@ using Eigen::HouseholderQR;
 
 const bool USE_CACHING = true;
 const double THETA = 2.0;
+
+// consider changing to static member of Cluster?
 int num_clusters = 0;
 
 class Cluster {
@@ -39,18 +41,21 @@ class Cluster {
 
   public:
     Cluster(int d) : d(d) {
-        clear();
+        init();
     }
 
-    void clear(){
+    void init() {
         clear_cache();
-        if (n > 0) {
-            num_clusters--;
-        }
-
         n = 0;
         sum = VectorXd::Zero(d);
         sum_squared = 1e-6*MatrixXd::Identity(d,d);
+    }
+
+    void clear() {
+        if (n > 0) {
+            num_clusters--;
+        }
+        init();
     }
 
     void clear_cache() {

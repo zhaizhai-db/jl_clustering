@@ -100,9 +100,21 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         save_init(data);
     }
 
+    VectorXd total_mean = VectorXd::Zero(D);
+    MatrixXd total_covar = MatrixXd::Zero(D, D);
+    for (int i = 0; i < N; i++) {
+        VectorXd x = data.row(i);
+        total_mean += x;
+        total_covar += x * x.transpose();
+    }
+    total_mean /= N;
+    total_covar /= N;
+
     vector<Cluster*> clusters;
     for (int k = 0; k < K; k++){
-        Cluster* new_cluster = new TCluster(D, D + 2.0, 0.1, VectorXd::Zero(D), MatrixXd::Identity(D, D));
+        // TODO: maybe add a small multiple of identity to total_covar
+        Cluster* new_cluster = new TCluster(
+            D, D + 2.0, 0.1, total_mean, total_covar);
         new_cluster->add(data.row(random_int(N)));
         clusters.push_back(new_cluster);
     }
@@ -112,7 +124,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
 
     double loglikelihood_old;
     for(int t = 0; t != T; t++) {
-        vector<int> assignments = reassign_naive(clusters, data, S);
+        vector<int> assignments = reassign_jl(clusters, data, S);
 
         //update cluster parameters
         for (int k = 0; k < K; k++) {
@@ -127,13 +139,34 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         //compute loglikelihood to test convergence
         double loglikelihood = 0.0;
         for(int n = 0; n < N; n++){
-            for(int s = 0; s < S; s++){
-                loglikelihood += clusters[assignments[S*n+s]]->log_posterior(data.row(n)) / S;
-            }
+            double log_posteriors[S];
+            for (int s = 0; s < S; s++)
+                log_posteriors[s] = clusters[assignments[S*n + s]]->log_posterior(data.row(n));
+
+            double max_log = log_posteriors[0];
+            for (int s = 0; s < S; s++)
+                max_log = max(max_log, log_posteriors[s]);
+            loglikelihood += max_log;
+
+            double prob = 0.0;
+            for (int s = 0; s < S; s++)
+                prob += exp(log_posteriors[s] - max_log);
+            prob /= S;
+
+            loglikelihood += log(prob);
         }
-        cout << loglikelihood << endl;
-        if(T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)
+        //cout << loglikelihood << endl;
+
+        if (t == T - 1 || (T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)) {
+            cout << "[";
+            for (int n = 0; n < N; n++) {
+                // TODO: handle soft assignments?
+                cout << assignments[S*n] << (n == N - 1 ? "" : ",");
+            }
+            cout << "]" << endl;
             break;
+        }
+
         loglikelihood_old = loglikelihood;
 
 
