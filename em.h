@@ -155,9 +155,18 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
 
             loglikelihood += log(prob);
         }
-        cout << loglikelihood << endl;
-        if(T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)
+        //cout << loglikelihood << endl;
+
+        if (t == T - 1 || (T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)) {
+            cout << "[";
+            for (int n = 0; n < N; n++) {
+                // TODO: handle soft assignments?
+                cout << assignments[S*n] << (n == N - 1 ? "" : ",");
+            }
+            cout << "]" << endl;
             break;
+        }
+
         loglikelihood_old = loglikelihood;
 
 

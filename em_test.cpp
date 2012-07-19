@@ -51,7 +51,7 @@ void libras_test(){
         int l;
         fin >> l;
         labels.push_back(l);
-        cout << "label=" << l << endl;
+        //cout << "label=" << l << endl;
     }
 
     VectorXd total_mean = VectorXd::Zero(D);
@@ -75,9 +75,9 @@ void libras_test(){
     for (int i = 0; i < N; i++)
         log_posterior += clusters[labels[i] - 1].log_posterior(data.row(i));
 
-    cout << "log posterior from true labels: " << log_posterior << endl;
+    //cout << "log posterior from true labels: " << log_posterior << endl;
 
-    em(data,K,-1,true,5);
+    em(data,K,-1,true);
 }
 
 int main() {
