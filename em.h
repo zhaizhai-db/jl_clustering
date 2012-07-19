@@ -53,12 +53,18 @@ void save(vector<Cluster*> & clusters, vector<int>* assignments=NULL) {
     }
 }
 
-vector<int> reassign_naive(vector<Cluster*> & clusters, const MatrixXd & data, int S) {
+vector<int> reassign_naive(vector<Cluster*> & clusters, const MatrixXd & data, vector<int>* pre_assignments, int S) {
     int N = data.rows();
     int K = clusters.size();
 
     vector<int> assignments;
     for (int n = 0; n < N; n++) {
+        if(pre_assignments[n] != -1){
+            for(int s = 0; s < S; s++){
+                clusters[(*pre_assignments)[n]].push_back(data.row(n));
+            }
+            continue;
+        }
         vector<double> logprobs;
         for (int k = 0; k < K; k++) {
             logprobs.push_back(clusters[k]->log_posterior(data.row(n)));
@@ -72,7 +78,7 @@ vector<int> reassign_naive(vector<Cluster*> & clusters, const MatrixXd & data, i
 }
 
 
-vector<int> reassign_jl(vector<Cluster*> & clusters, const MatrixXd & data, int S) {
+vector<int> reassign_jl(vector<Cluster*> & clusters, const MatrixXd & data, vector<int>* pre_assignments, int S) {
     int N = data.rows();
     int K = clusters.size();
     int D = data.cols();
@@ -84,6 +90,12 @@ vector<int> reassign_jl(vector<Cluster*> & clusters, const MatrixXd & data, int 
         jlp.add_cluster(clusters[i]);
 
     for (int i = 0; i < N; i++){
+        if(pre_assignments[n] != -1){
+            for(int s = 0; s < S; s++){
+                clusters[(*pre_assignments)[n]].push_back(data.row(n));
+            }
+            continue;
+        }
         for(int s = 0; s < S; s++){
             assignments.push_back(jlp.assign_cluster(data.row(i)));
         }
@@ -93,9 +105,14 @@ vector<int> reassign_jl(vector<Cluster*> & clusters, const MatrixXd & data, int 
 }
 
 
-void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
+pair<vector<int>, vector<Cluster*> > em(MatrixXd data, int K, vector<int>* pre_assignments, \
+        int T=-1, bool debug=false, int S=1) {
     int N = data.rows();
     int D = data.cols();
+    if(pre_assignments == NULL){
+        *pre_assignments = vector<int>(N,-1);
+    }
+
     if (debug) {
         save_init(data);
     }
@@ -115,8 +132,17 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         // TODO: maybe add a small multiple of identity to total_covar
         Cluster* new_cluster = new TCluster(
             D, D + 2.0, 0.1, total_mean, total_covar);
-        new_cluster->add(data.row(random_int(N)));
         clusters.push_back(new_cluster);
+    }
+    for(int n = 0; n < N; n++){
+        if(pre_assignments[n] != -1){
+            clusters[pre_assignments[n]]->add(data.row(n));
+        }
+    }
+    for(int k = 0; k < K; k++){
+        if(clusters[k]->get_n() == 0){
+            clusters[k]->add(data.row(random_int(N)));
+        }
     }
     if (debug) {
         save(clusters);
@@ -124,7 +150,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
 
     double loglikelihood_old;
     for(int t = 0; t != T; t++) {
-        vector<int> assignments = reassign_jl(clusters, data, S);
+        vector<int> assignments = reassign_jl(clusters, data, pre_assignments, S);
 
         //update cluster parameters
         for (int k = 0; k < K; k++) {
@@ -173,5 +199,7 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         if (debug) {
             save(clusters, &assignments);
         }
+
+        return pair<vector<int>, vector<Cluster*> >(assignments, clusters);
     }
 }
