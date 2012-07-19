@@ -61,6 +61,7 @@ if DOWNSAMPLE:
     print 'Downsampling...'
     clusters = downsample(clusters, DOWNSAMPLE_RATE_N, DOWNSAMPLE_RATE_D)
     print 'Done downsampling'
+print len(clusters.values()[0][0])
 
 data_slices = collections.defaultdict(list)
 
@@ -81,13 +82,13 @@ for s in data_slices:
 
 
 def print_to_file(slice_name, data_slice):
-    file_name = dataset_name + '_' + slice_name + '.txt'
+    file_name = dataset_name + '.' + slice_name
 
     N = len(data_slice)
     K = len(clusters)
     D = len(clusters.values()[0][0])
 
-    f = open(file_name, 'w')
+    f = open('../' + file_name, 'w')
     f.write('%d %d %d\n' % (N, D, K))
     for row in data_slice:
         f.write(' '.join(str(x) for x in row) + '\n')
