@@ -36,6 +36,8 @@ while ~feof(fin)
         N=fscanf(fin,'%d',1);
         D=fscanf(fin,'%d',1);
         K=fscanf(fin,'%d',1);
+        colors = distinguishable_colors(K);
+
         fprintf(1,'params: %d %d %d\n',N,D,K);
         mu = zeros(K,D);
         sigma = zeros(K,D,D);
@@ -48,10 +50,10 @@ while ~feof(fin)
             disp(squeeze(sigma(k,:,:)));
         end
         clf; hold on;
-        plot(data(:,1),data(:,2),'.');
+        plot(data(:,1),data(:,2),'k.');
         for k=1:K
-            plot(mu(k,1),mu(k,2),'r.');
-            drawgaussian(mu(k,1:2),sigma(k,1:2,1:2),'g');
+            plot(mu(k,1),mu(k,2),'x','Color',colors(k,:));
+            drawgaussian(mu(k,1:2),sigma(k,1:2,1:2),colors(k,:));
         end
         
     end
@@ -59,6 +61,12 @@ while ~feof(fin)
         assignments = fscanf(fin,'%d',N);
         disp('assignments:');
         disp(assignments);
+        if N == Norig
+            for n=1:N
+                plot(data(n,1),data(n,2),'.',...
+                    'Color',colors(assignments(n)+1,:));
+            end
+        end
     end
     if status == 2
         N=fscanf(fin,'%d',1);
