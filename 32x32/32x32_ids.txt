@@ -1,0 +1,6 @@
+0: dog
+1: cat
+2: sunset
+3: xmastree
+4: carsides
+5: flowers
