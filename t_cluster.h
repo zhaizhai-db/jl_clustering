@@ -1,7 +1,11 @@
 #ifndef M_T_CLUSTER
 #define M_T_CLUSTER
 
+#include <Eigenvalues>
+
 #include "cluster.h"
+
+using Eigen::EigenSolver;
 
 const double ALPHA = 0.5;
 

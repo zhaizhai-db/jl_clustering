@@ -12,7 +12,7 @@ using Eigen::VectorXd;
 
 int main(int argc, char **argv) {
     char prefix[1000];
-    sprintf(prefix,"32x32/");
+    sprintf(prefix,"data/");
     char filename[1000];
     assert(argc >= 2);
     sprintf(filename,"%s%s.train",prefix,argv[1]);
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     printf("Done reading holdout data, starting predictions...\n");
     long long int time3 = clock();
     vector<int> labels_holdout_predicted;
-    if (reassign_jl(data_holdout, clusters, vector<int>(N2,-1), 1, &labels_holdout_predicted) != 0) {
+    if (reassign_naive(data_holdout, clusters, vector<int>(N2,-1), 1, &labels_holdout_predicted) != 0) {
         printf("Error: reassign_jl returned a non-zero status code.\n");
     }
     long long int time4 = clock();
