@@ -59,7 +59,6 @@ struct JLProjection {
 
     int assign_cluster(VectorXd x_d) {
         vector<double> est_loglikelies;
-        vector<double> est_probs;
 
         for (int i = 0; i < (int)clusters.size(); i++) {
             VectorXd x_m = projections_md[i] * (x_d - clusters[i]->mu());
@@ -74,6 +73,8 @@ struct JLProjection {
             num_tries++;
 
             double accept = exp(true_logprob - est_loglikelies[prop]);
+            if(accept > 1.0) printf("accept: %f\n", accept);
+            assert(accept <= 1.0);
             if (random_double() < accept){
                 printf("Evaluated log_posterior %d times.\n",num_tries);
                 return prop;

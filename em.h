@@ -149,6 +149,8 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
     }
     total_mean /= N;
     total_covar /= N;
+    total_covar -= total_mean * total_mean.transpose();
+    total_covar = 0.8 * total_covar + 0.2 * total_covar.trace() * MatrixXd::Identity(D, D);
 
     for (int k = 0; k < K; k++){
         cout << "Creating cluster " << k << endl;
@@ -177,7 +179,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         if (reassign_naive(data, clusters, pre_assignments, S, &assignments) != 0) {
             return 1;
         }
-
+        cout << "Done computing assignments" << endl;
         //update cluster parameters
         for (int k = 0; k < K; k++) {
             clusters[k]->clear();
