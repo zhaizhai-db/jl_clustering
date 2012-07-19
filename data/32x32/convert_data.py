@@ -85,7 +85,7 @@ def print_to_file(slice_name, data_slice):
 
     N = len(data_slice)
     K = len(clusters)
-    D = row_len
+    D = len(clusters.values()[0][0])
 
     f = open(file_name, 'w')
     f.write('%d %d %d\n' % (N, D, K))
