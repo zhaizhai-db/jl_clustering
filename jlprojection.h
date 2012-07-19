@@ -37,7 +37,7 @@ struct JLProjection {
     vector<Cluster *> clusters;
     vector<MatrixXd> projections_md;
 
-JLProjection(int _m, int _d, double error_prob=1e-6) :
+    JLProjection(int _m, int _d, double error_prob=1e-6) :
         m(_m), d(_d) {
         vecs_md = MatrixXd(m, d);
         for (int i = 0; i < m; i++) {
@@ -67,13 +67,17 @@ JLProjection(int _m, int _d, double error_prob=1e-6) :
                 clusters[i]->log_posterior_norm(min_bound * x_m.dot(x_m)));
         }
 
+        int num_tries = 0;
         while (true) {
             int prop = sample(est_loglikelies);
             double true_logprob = clusters[prop]->log_posterior(x_d);
+            num_tries++;
 
             double accept = exp(true_logprob - est_loglikelies[prop]);
-            if (random_double() < accept)
+            if (random_double() < accept){
+                printf("Evaluated log_posterior %d times.\n",num_tries);
                 return prop;
+            }
 
             est_loglikelies[prop] = true_logprob;
         }
