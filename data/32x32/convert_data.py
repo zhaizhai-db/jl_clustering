@@ -39,7 +39,7 @@ for i, c in enumerate(class_names):
         data_slices[s].extend(data[:m])
         data = data[m:]
 
-    data_slices['pretraining'].extend(data)
+    data_slices['pretrain'].extend(data)
 
 
 for s in data_slices:
