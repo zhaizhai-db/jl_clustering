@@ -4,8 +4,8 @@ import sys
 import os
 from random import randint, sample
 
-DATA_RATIOS = {'holdout': 0.3, 'test': 0.3}
-DOWNSAMPLE_RATE_N = 0.25
+DATA_RATIOS = {'holdout': 0.33, 'test': 0.33}
+DOWNSAMPLE_RATE_N = 0.4
 DOWNSAMPLE_RATE_D = 0.1
 DOWNSAMPLE = True
 
@@ -61,7 +61,6 @@ if DOWNSAMPLE:
     print 'Downsampling...'
     clusters = downsample(clusters, DOWNSAMPLE_RATE_N, DOWNSAMPLE_RATE_D)
     print 'Done downsampling'
-print len(clusters.values()[0][0])
 
 data_slices = collections.defaultdict(list)
 
