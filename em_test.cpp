@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "em.h"
+#include "t_cluster.h"
 
 #include <Dense>
 
@@ -52,11 +53,35 @@ void libras_test(){
         labels.push_back(l);
         cout << "label=" << l << endl;
     }
-    em(data,K,50,true);
+
+    VectorXd total_mean = VectorXd::Zero(D);
+    MatrixXd total_covar = MatrixXd::Zero(D, D);
+    for (int i = 0; i < N; i++) {
+        VectorXd x = data.row(i);
+        total_mean += x;
+        total_covar += x * x.transpose();
+    }
+    total_mean /= N;
+    total_covar /= N;
+
+    vector<TCluster> clusters;
+    for (int k = 0; k < K; k++)
+        clusters.push_back(TCluster(D, D + 2.0, 0.1, total_mean, total_covar));
+
+    for (int i = 0; i < N; i++)
+        clusters[labels[i] - 1].add(data.row(i));
+
+    double log_posterior = 0.0;
+    for (int i = 0; i < N; i++)
+        log_posterior += clusters[labels[i] - 1].log_posterior(data.row(i));
+
+    cout << "log posterior from true labels: " << log_posterior << endl;
+
+    em(data,K,-1,true);
 }
 
 int main() {
     //test1();
-    test2();
-    //libras_test();
+    //test2();
+    libras_test();
 }

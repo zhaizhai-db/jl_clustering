@@ -100,9 +100,21 @@ void em(MatrixXd data, int K, int T=-1, bool debug=false, int S=1) {
         save_init(data);
     }
 
+    VectorXd total_mean = VectorXd::Zero(D);
+    MatrixXd total_covar = MatrixXd::Zero(D, D);
+    for (int i = 0; i < N; i++) {
+        VectorXd x = data.row(i);
+        total_mean += x;
+        total_covar += x * x.transpose();
+    }
+    total_mean /= N;
+    total_covar /= N;
+
     vector<Cluster*> clusters;
     for (int k = 0; k < K; k++){
-        Cluster* new_cluster = new TCluster(D, D + 2.0, 0.1, VectorXd::Zero(D), MatrixXd::Identity(D, D));
+        // TODO: maybe add a small multiple of identity to total_covar
+        Cluster* new_cluster = new TCluster(
+            D, D + 2.0, 0.1, total_mean, total_covar);
         new_cluster->add(data.row(random_int(N)));
         clusters.push_back(new_cluster);
     }

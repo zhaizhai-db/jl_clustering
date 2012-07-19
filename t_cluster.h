@@ -3,7 +3,7 @@
 
 #include "cluster.h"
 
-#define ALPHA 0.5
+const double ALPHA = 0.5;
 
 struct TCluster : public Cluster {
   private:
