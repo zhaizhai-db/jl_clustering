@@ -1,6 +1,7 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <ctime>
 #include <assert.h>
 
 #include <Dense>
@@ -15,6 +16,19 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 ofstream fout("log.txt");
+
+int ALGORITHM;
+double K0, V0, LAMBDA;
+void initialize_em(int _ALGORITHM, double _K0, double _V0, double _LAMBDA){
+    ALGORITHM=_ALGORITHM;
+    assert(ALGORITHM == 0 || ALGORITHM == 1); // 0 = naive, 1 = jl
+    K0=_K0;
+    assert(K0 > 0);
+    V0=_V0;
+    assert(V0 > 0); // TODO check this is sufficient
+    LAMBDA=_LAMBDA;
+    assert(0.0 <= LAMBDA && LAMBDA <= 1.0);
+}
 
 void save_init(MatrixXd data) {
 //    fout << 2 << endl;
@@ -63,6 +77,8 @@ int reassign_naive(const MatrixXd& data, const vector<Cluster*>& clusters,
     int N = data.rows();
     int K = clusters.size();
 
+    cout << "Computing new assignments..." << flush;
+    long long int time1 = clock();
     for (int n = 0; n < N; n++) {
         if(pre_assignments[n] != -1){
             for(int s = 0; s < S; s++){
@@ -78,6 +94,8 @@ int reassign_naive(const MatrixXd& data, const vector<Cluster*>& clusters,
             assignments->push_back(sample(logprobs));
         }
     }
+    long long int time2 = clock();
+    printf(" Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
 
     return 0;
 }
@@ -93,14 +111,24 @@ int reassign_jl(const MatrixXd& data, const vector<Cluster*>& clusters,
     int N = data.rows();
     int K = clusters.size();
     int D = data.cols();
+    long long int time1, time2;
 
     cout << "forming JL projectors..." << flush;
+    time1 = clock();
     JLProjection jlp(get_proj_dim(N, D, K), D);
-    cout << " Done." << endl;
+    //jlp.reset_num_tries();
+    time2 = clock();
+    printf("Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
 
+    cout << "initializing JL clusters (requires cholesky)..." << flush;
+    time1 = clock();
     for (int k = 0; k < K; k++)
         jlp.add_cluster(clusters[k]);
+    time2 = clock();
+    printf("Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
 
+    cout << "computing new assignments..." << flush;
+    time1 = clock();
     for (int n = 0; n < N; n++){
         if(pre_assignments[n] != -1){
             for(int s = 0; s < S; s++){
@@ -112,6 +140,9 @@ int reassign_jl(const MatrixXd& data, const vector<Cluster*>& clusters,
             assignments->push_back(jlp.assign_cluster(data.row(n)));
         }
     }
+    time2 = clock();
+    printf("Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
+    printf("Average number of calls per point: %.4f\n", jlp.avg_calls());
 
     return 0;
 }
@@ -130,6 +161,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
 
     int N = data.rows();
     int D = data.cols();
+    long long int time1, time2;
     cout << "N: " << N << ", D: " << D << endl;
 
     if (debug) {
@@ -138,11 +170,11 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         cout << " Done." << endl;
     }
 
-    cout << "Computing mean and covariance of data set..." << endl;
+    cout << "Computing mean and covariance of data set..." << flush;
+    time1 = clock();
     VectorXd total_mean = VectorXd::Zero(D);
     MatrixXd total_covar = MatrixXd::Zero(D, D);
     for (int i = 0; i < N; i++) {
-        cout << "i = " << i << endl;
         VectorXd x = data.row(i);
         total_mean += x;
         total_covar += x * x.transpose();
@@ -150,13 +182,14 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
     total_mean /= N;
     total_covar /= N;
     total_covar -= total_mean * total_mean.transpose();
-    total_covar = 0.8 * total_covar + 0.2 * total_covar.trace() * MatrixXd::Identity(D, D);
+    total_covar = (1.0-LAMBDA) * total_covar + LAMBDA * total_covar.trace() * MatrixXd::Identity(D, D);
+    time2 = clock();
+    printf(" Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
 
     for (int k = 0; k < K; k++){
-        cout << "Creating cluster " << k << endl;
         // TODO: maybe add a small multiple of identity to total_covar
         Cluster* new_cluster = new TCluster(
-            D, D + 2.0, 0.1, total_mean, total_covar);
+            D, D + V0, K0, total_mean, total_covar);
         clusters.push_back(new_cluster);
     }
     for(int n = 0; n < N; n++){
@@ -164,36 +197,58 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
             clusters[pre_assignments[n]]->add(data.row(n));
         }
     }
+    assignments = pre_assignments;
     for(int k = 0; k < K; k++){
-        if(clusters[k]->get_n() == 0){
+        assert(clusters[k]->get_n() != 0);
+        /*if(clusters[k]->get_n() == 0){
             clusters[k]->add(data.row(random_int(N)));
-        }
+        }*/
     }
     if (debug) {
         save(clusters);
     }
 
-    double loglikelihood_old;
+    double loglikelihood_old = -1e9;
     for(int t = 0; t != T; t++) {
         cout << "Starting iteration " << t << "." << endl;
-        if (reassign_naive(data, clusters, pre_assignments, S, &assignments) != 0) {
+        vector<int> assignments_old = assignments;
+        int status;
+        if(ALGORITHM == 0){
+            status = reassign_naive(data, clusters, pre_assignments, S, &assignments);
+        }
+        else if(ALGORITHM == 1) {
+            status = reassign_jl(data, clusters, pre_assignments, S, &assignments);
+        } else {
+            status = 1;
+        }
+        if(status != 0) {
             return 1;
         }
-        cout << "Done computing assignments" << endl;
+        //cout << "Done computing assignments" << endl;
         //update cluster parameters
-        for (int k = 0; k < K; k++) {
+        /*for (int k = 0; k < K; k++) {
             clusters[k]->clear();
-        }
+        }*/
+        cout << "Updating clusters..." << flush;
+        time1 = clock();
         for (int n = 0; n < N; n++) {
             for(int s = 0; s < S; s++){
-                clusters[assignments[S*n+s]]->add(data.row(n));
+                if(assignments_old[S*n+s] != assignments[S*n+s]){
+                    if(assignments_old[S*n+s] != -1)
+                        clusters[assignments[S*n+s]]->remove(data.row(n));
+                    if(assignments[S*n+s] != -1)
+                        clusters[assignments[S*n+s]]->add(data.row(n));
+                }
             }
         }
+        time2 = clock();
+        printf(" Done updating clusters. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
 
         //compute loglikelihood to test convergence
         double loglikelihood = 0.0;
+        cout << "Computing loglikelihood..." << flush;
+        time1 = clock();
         for(int n = 0; n < N; n++){
-            cout << "Considering data point " << n << "." << endl;
             double log_posteriors[S];
             for (int s = 0; s < S; s++)
                 log_posteriors[s] = clusters[assignments[S*n + s]]->log_posterior(data.row(n));
@@ -210,15 +265,17 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
 
             loglikelihood += log(prob);
         }
-        cout << loglikelihood << endl;
+        time2 = clock();
+        printf("Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
+        cout << "Log likelihood: " << loglikelihood << endl;
 
         if (t == T - 1 || (T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)) {
-            cout << "[";
+            /*cout << "[";
             for (int n = 0; n < N; n++) {
                 // TODO: handle soft assignments?
                 cout << assignments[S*n] << (n == N - 1 ? "" : ",");
             }
-            cout << "]" << endl;
+            cout << "]" << endl;*/
             break;
         }
 

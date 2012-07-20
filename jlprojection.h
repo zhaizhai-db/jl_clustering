@@ -16,7 +16,7 @@ using Eigen::VectorXd;
 using std::vector;
 
 int get_proj_dim(int n, int d, int k) {
-    return 10;
+    return 400;
 }
 
 double compute_min_bound(int m, double error_prob) {
@@ -26,6 +26,7 @@ double compute_min_bound(int m, double error_prob) {
 
 struct JLProjection {
     int m, d;
+    int num_tries, num_calls;
 
     // if x is d-dimensional, then |vecs_md * x| should be a good
     // estimate of |x|
@@ -38,7 +39,7 @@ struct JLProjection {
     vector<MatrixXd> projections_md;
 
     JLProjection(int _m, int _d, double error_prob=1e-6) :
-        m(_m), d(_d) {
+        m(_m), d(_d), num_tries(0), num_calls(0) {
         vecs_md = MatrixXd(m, d);
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < d; j++){
@@ -57,6 +58,15 @@ struct JLProjection {
         projections_md.push_back(vecs_md * cluster->cholesky());
     }
 
+    void reset_num_tries(){
+        num_tries = 0;
+        num_calls = 0;
+    }
+    double avg_calls(){
+        assert(num_calls != 0);
+        return num_tries/(float)num_calls;
+    }
+
     int assign_cluster(VectorXd x_d) {
         vector<double> est_loglikelies;
 
@@ -66,7 +76,7 @@ struct JLProjection {
                 clusters[i]->log_posterior_norm(min_bound * x_m.dot(x_m)));
         }
 
-        int num_tries = 0;
+        num_calls++;
         while (true) {
             int prop = sample(est_loglikelies);
             double true_logprob = clusters[prop]->log_posterior(x_d);
@@ -76,7 +86,7 @@ struct JLProjection {
             if(accept > 1.0) printf("accept: %f\n", accept);
             assert(accept <= 1.0);
             if (random_double() < accept){
-                printf("Evaluated log_posterior %d times.\n",num_tries);
+                //printf("Evaluated log_posterior %d times.\n",num_tries);
                 return prop;
             }
 
