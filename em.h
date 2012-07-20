@@ -82,10 +82,10 @@ int kmeans(const MatrixXd& data, int K, const vector<int>& pre_assignments,
     int D = data.cols();
 
     // Compute the means of the pre-assigned clusters
-    VectorXd* means = new VectorXd[K];
+    RowVectorXd* means = new RowVectorXd[K];
     int* sizes = new int[K];
     for (int k = 0; k < K; k++) {
-        means[K] = VectorXd::Zero(D);
+        means[k] = RowVectorXd::Zero(D);
     }
     for (int n = 0; n < N; n++) {
         if (pre_assignments[n] != -1) {
@@ -234,11 +234,11 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
     for (int i = 0; i < N; i++) {
         VectorXd x = data.row(i);
         total_mean += x;
-        total_covar += x * x.transpose();
+        total_covar.noalias() += x * x.transpose();
     }
     total_mean /= N;
     total_covar /= N;
-    total_covar -= total_mean * total_mean.transpose();
+    total_covar.noalias() -= total_mean * total_mean.transpose();
     total_covar = (1.0-LAMBDA) * total_covar + LAMBDA * total_covar.trace() * MatrixXd::Identity(D, D);
     time2 = clock();
     printf(" Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
@@ -265,15 +265,36 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         save(clusters);
     }
 
+    vector<int> assignments_old;
     if (use_kmeans) {
-        cout << "Running kmeans precomp." << endl;
+        cout << "Running kmeans precomp." << flush;
+        time1 = clock();
+        assignments_old = assignments;
         kmeans(data, K, pre_assignments, S, &assignments);
+        time2 = clock();
+        printf(" Done. Elapsed time: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
+        cout << "Updating clusters." << flush;
+        time1 = clock();
+        for (int n = 0; n < N; n++) {
+            for(int s = 0; s < S; s++){
+                if(assignments_old[S*n+s] != assignments[S*n+s]){
+                    if(assignments_old[S*n+s] != -1)
+                        clusters[assignments[S*n+s]]->remove(data.row(n));
+                    if(assignments[S*n+s] != -1)
+                        clusters[assignments[S*n+s]]->add(data.row(n));
+                }
+            }
+        }
+        time2 = clock();
+        printf(" Done. Elapsed time: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
     }
 
+    init_anneal((float)1);
     double loglikelihood_old = -1e9;
     for(int t = 0; t != T; t++) {
-        cout << "Starting iteration " << t << "." << endl;
-        vector<int> assignments_old = assignments;
+        if(t != 0) step_anneal(1.0);
+        cout << "Starting iteration " << t << " (temperature = " << ANNEAL_TEMPERATURE << ")." << endl;
+        assignments_old = assignments;
         int status;
         if(ALGORITHM == 0){
             status = reassign_naive(data, clusters, pre_assignments, S, &assignments);

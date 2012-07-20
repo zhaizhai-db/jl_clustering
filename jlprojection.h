@@ -16,7 +16,7 @@ using Eigen::VectorXd;
 using std::vector;
 
 int get_proj_dim(int n, int d, int k) {
-    return 400;
+    return 100;
 }
 
 double compute_min_bound(int m, double error_prob) {
@@ -51,11 +51,11 @@ struct JLProjection {
 
     void add_cluster(Cluster * cluster) {
         clusters.push_back(cluster);
+        // TODO fix this documentation
         // if U = cluster->cholesky(), then estimating x^t sigma^-1 x
         // is the same as estimating |Ux|^2
-        MatrixXd proj = vecs_md * cluster->cholesky();
-        proj *= sqrt(d) / sqrt(m);
-        projections_md.push_back(vecs_md * cluster->cholesky());
+        MatrixXd proj = cluster->cholesky2().triangularView<Lower>().solve<OnTheRight>(vecs_md);
+        projections_md.push_back(proj);
     }
 
     void reset_num_tries(){
@@ -63,7 +63,8 @@ struct JLProjection {
         num_calls = 0;
     }
     double avg_calls(){
-        assert(num_calls != 0);
+        //assert(num_calls != 0);
+        if(num_calls == 0) return -1.0;
         return num_tries/(float)num_calls;
     }
 
@@ -82,7 +83,7 @@ struct JLProjection {
             double true_logprob = clusters[prop]->log_posterior(x_d);
             num_tries++;
 
-            double accept = exp(true_logprob - est_loglikelies[prop]);
+            double accept = exp((true_logprob - est_loglikelies[prop])/ANNEAL_TEMPERATURE);
             if(accept > 1.0) printf("accept: %f\n", accept);
             assert(accept <= 1.0);
             if (random_double() < accept){

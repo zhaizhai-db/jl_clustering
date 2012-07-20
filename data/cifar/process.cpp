@@ -10,13 +10,13 @@ using namespace std;
 // Scaling downsamples D by a factor of SCALE^2, so SCALE
 // should be a divisor of 32.
 // In addition, turning off USE_COLOR downsamples D by 3x.
-#define SCALE (1)
+#define SCALE (2)
 #define USE_COLOR (false)
 
 // N can be any positive integer up to (and including) 10000.
 // The training set will have (T-1)*N points, while the holdout
 // and test data will have N points each.
-#define N (130)
+#define N (1000)
 #define D ((USE_COLOR ? 3 : 1)*NUM_PIXELS/(SCALE*SCALE))
 #define K (10)
 #define T (5)

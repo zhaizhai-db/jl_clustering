@@ -12,25 +12,39 @@ using Eigen::VectorXd;
 
 //Run as: ./evaluate filename algorithm k0 v0 lambda
 int main(int argc, char **argv) {
+    //parse command line arguments and initialize
     char prefix[1000];
     sprintf(prefix,"data/");
     char filename[1000];
-    assert(argc >= 6);
-    sprintf(filename,"%s%s.train",prefix,argv[1]);
-    int ALGORITHM;
+    assert(argc == 8);
+    int ALGORITHM, TRAIN_ALL, T;
     double K0, V0, LAMBDA;
     sscanf(argv[2],"%d",&ALGORITHM);
     sscanf(argv[3],"%lf",&K0);
     sscanf(argv[4],"%lf",&V0);
     sscanf(argv[5],"%lf",&LAMBDA);
+    sscanf(argv[6],"%d",&TRAIN_ALL);
+    sscanf(argv[7],"%d",&T);
+    assert(TRAIN_ALL == 0 || TRAIN_ALL == 1);
     initialize_em(ALGORITHM, K0, V0, LAMBDA);
 
-    printf("Reading training data...\n");
+    //read data parmaters
+    printf("Reading input data...\n");
+    int N, D, K, N2, D2, K2;
+    sprintf(filename,"%s%s.train",prefix,argv[1]);
     FILE *ftrain = fopen(filename,"r");
-    int N, D, K;
+    sprintf(filename,"%s%s.holdout",prefix,argv[1]);
+    FILE *fholdout = fopen(filename,"r");
     fscanf(ftrain,"%d%d%d",&N,&D,&K);
-    MatrixXd data_train = MatrixXd::Zero(N, D);
-    vector<int> labels_train(N, -1);
+    fscanf(fholdout,"%d%d%d",&N2,&D2,&K2);
+    assert(D2==D);
+    assert(K2==K);
+
+    //read training and holdout data
+    MatrixXd data_train = MatrixXd::Zero(N+N2, D);
+    MatrixXd data_holdout = MatrixXd::Zero(N2,D2);
+    vector<int> labels_train(N+N2, -1);
+    vector<int> labels_holdout = vector<int>(N2,-1);
     double temp_f; int temp_i;
     for(int n=0;n<N;n++){
         for(int d=0;d<D;d++){
@@ -40,41 +54,37 @@ int main(int argc, char **argv) {
         fscanf(ftrain,"%d",&temp_i);
         labels_train[n] = temp_i;
     }
-    printf("Done reading training data, starting training...\n");
-    
+    for(int n=0;n<N2;n++){
+        for(int d=0;d<D2;d++){
+            fscanf(fholdout,"%lf",&temp_f);
+            data_holdout(n,d)=temp_f;
+            data_train(N+n,d)=temp_f;
+        }
+        fscanf(fholdout,"%d",&temp_i);
+        labels_holdout[n]=temp_i;
+        labels_train[N+n]=temp_i; // don't tell the algorithm the holdout label
+    }
+    fclose(ftrain);
+    fclose(fholdout);
+
+    //run EM
+    printf("Done reading input data, starting training...\n");
     long long int time1 = clock();
     vector<int> assignments;
     vector<Cluster*> clusters;
-    if (em(data_train, K, labels_train, &assignments, &clusters, -1, false, 1, true) != 0) {
+    if(!TRAIN_ALL) labels_train = vector<int>(labels_train.begin(),  labels_train.begin() + N);
+    if (em(data_train.block(0, 0, N+TRAIN_ALL*N2, D), K, labels_train, &assignments, &clusters, T, false, 1, true) != 0) {
         printf("Error: em returned a non-zero status code.\n");
         return 1;
     }
     long long int time2 = clock();
     printf("Done training: took %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
-    fclose(ftrain);
+    cout << "Cluster sizes: ";
+    for(int k=0;k<K;k++)
+        cout << clusters[k]->get_n() << " ";
+    cout << endl;
 
-    printf("Reading holdout data...\n");
-    sprintf(filename,"%s%s.holdout",prefix,argv[1]);
-    FILE *fholdout = fopen(filename,"r");
-    int N2, D2, K2;
-    fscanf(fholdout,"%d%d%d",&N2,&D2,&K2);
-    assert(D2==D);
-    assert(K2==K);
-    MatrixXd data_holdout = MatrixXd::Zero(N2,D2);
-    vector<int> labels_holdout = vector<int>(N2,-1);
-    for(int n=0;n<N2;n++){
-        for(int d=0;d<D2;d++){
-            fscanf(fholdout,"%lf",&temp_f);
-            data_holdout(n,d)=temp_f;
-        }
-        /*printf("Log probabilities:");
-        for(int k=0;k<K;k++)
-            printf(" %.2f", clusters[k]->log_posterior(data_holdout.row(n)));
-        printf("\n");*/
-        fscanf(fholdout,"%d",&temp_i);
-        labels_holdout[n]=temp_i;
-    }
-    printf("Done reading holdout data, starting predictions...\n");
+    //assign labels to holdout data (this part can probably be cut)
     long long int time3 = clock();
     vector<int> labels_holdout_predicted;
     if(ALGORITHM==0){
@@ -91,6 +101,7 @@ int main(int argc, char **argv) {
     long long int time4 = clock();
     printf("Done assigning predictions: took %.4f seconds.\n", (time4-time3)/(float)CLOCKS_PER_SEC);
 
+    //compute accuracy of algorithm
     int num_correct = 0;
     for(int n=0;n<N2;n++){
         if(labels_holdout_predicted[n] == labels_holdout[n]){

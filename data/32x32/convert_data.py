@@ -4,8 +4,8 @@ import sys
 import os
 from random import randint, sample
 
-DOWNSAMPLE_RATE_N = 0.4
-DOWNSAMPLE_RATE_D = 0.25
+DOWNSAMPLE_RATE_N = 1.0 #0.4
+DOWNSAMPLE_RATE_D = 1.0 #0.25
 DOWNSAMPLE = True
 
 def dot(v, u):
