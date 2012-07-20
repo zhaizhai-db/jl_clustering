@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     long long int time1 = clock();
     vector<int> assignments;
     vector<Cluster*> clusters;
-    if (em(data_train, K, labels_train, &assignments, &clusters, -1, false, 1) != 0) {
+    if (em(data_train, K, labels_train, &assignments, &clusters, -1, false, 1, true) != 0) {
         printf("Error: em returned a non-zero status code.\n");
         return 1;
     }

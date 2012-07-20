@@ -176,7 +176,7 @@ int reassign_jl(const MatrixXd& data, const vector<Cluster*>& clusters,
 
 int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
        vector<int>* assignments_ptr, vector<Cluster*>* clusters_ptr, \
-       int T=-1, bool debug=false, int S=1) {
+       int T=-1, bool debug=false, int S=1, bool use_kmeans=false) {
     if (assignments_ptr == NULL || clusters_ptr == NULL) {
         return 1;
     }
@@ -230,7 +230,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         save(clusters);
     }
 
-    if (true) {
+    if (use_kmeans) {
         cout << "Running kmeans precomp." << endl;
         kmeans(data, K, pre_assignments, S, &assignments);
     }
