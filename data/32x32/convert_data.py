@@ -55,6 +55,7 @@ for data_type in ('pretrain', 'holdout', 'test'):
         print 'Downsampling %s...' % (data_type,)
         clusters = downsample(clusters, DOWNSAMPLE_RATE_N, DOWNSAMPLE_RATE_D)
 
+    # Add labels to the end of the data lists
     class_names = list(clusters)
     f = open(dataset_name + 'ids.txt', 'w')
     for i, c in enumerate(class_names):
@@ -66,7 +67,8 @@ for data_type in ('pretrain', 'holdout', 'test'):
     data = sum(clusters.values(), [])
     shuffle(data)
     N = len(data)
-    D = len(data[0])
+    # Account for the label by subtracting 1
+    D = len(data[0]) - 1
     K = len(clusters)
 
     file_name = dataset_name + '.' + data_type

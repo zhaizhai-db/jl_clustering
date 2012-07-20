@@ -108,5 +108,22 @@ int main(int argc, char **argv) {
     printf("Got %d/%d correct.\n",num_correct,N2);
     printf("Training took %.4f seconds, predictions took %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC, (time4-time3)/(float)CLOCKS_PER_SEC);
 
+    // log stats
+
+    FILE * logfile = fopen("run_stats.txt", "a");
+
+    fprintf(logfile, "--EVALUATE RUN--\n");
+
+    for (int i = 0; i < 8; i++) {
+        fprintf(logfile, "%s", argv[i]);
+        fprintf(logfile, (i == 7 ? "\n" : " "));
+    }
+
+    fprintf(logfile, "N=%d\tK=%d\tD=%d\n", N, K, D);
+    fprintf(logfile, "M=%d\tN_holdout=%d\n", get_proj_dim(N, D, K), N2);
+    fprintf(logfile, "correct: %d/%d\t", num_correct, N2);
+    fprintf(logfile, "train time: %.4f\tpredict time: %.4f\n",
+            (time2-time1)/(float)CLOCKS_PER_SEC, (time4-time3)/(float)CLOCKS_PER_SEC);
+
     return 0;
 }
