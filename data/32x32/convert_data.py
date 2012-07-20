@@ -2,11 +2,11 @@ import Image
 import collections
 import sys
 import os
-from random import randint, sample
+from random import randint, sample, shuffle
 
 DOWNSAMPLE_RATE_N = 1.0 #0.4
 DOWNSAMPLE_RATE_D = 1.0 #0.25
-DOWNSAMPLE = True
+DOWNSAMPLE = False
 
 def dot(v, u):
     return sum(x*y for (x, y) in zip(v, u))
@@ -51,20 +51,24 @@ for data_type in ('pretrain', 'holdout', 'test'):
             row_len = len(row)
         assert row_len == len(row)
 
-    class_names = list(clusters)
-    f = open(dataset_name + 'ids.txt', 'w')
-    for i, c in enumerate(class_names):
-        f.write('%d: %s\n' % (i, c))
-    f.close()
-
     if DOWNSAMPLE:
         print 'Downsampling %s...' % (data_type,)
         clusters = downsample(clusters, DOWNSAMPLE_RATE_N, DOWNSAMPLE_RATE_D)
 
+    # Add labels to the end of the data lists
+    class_names = list(clusters)
+    f = open(dataset_name + 'ids.txt', 'w')
+    for i, c in enumerate(class_names):
+        clusters[c] = [x + [i] for x in clusters[c]]
+        f.write('%d: %s\n' % (i, c))
+    f.close()
+
     print 'Dumping %s to file...' % (data_type,)
     data = sum(clusters.values(), [])
+    shuffle(data)
     N = len(data)
-    D = len(data[0])
+    # Account for the label by subtracting 1
+    D = len(data[0]) - 1
     K = len(clusters)
 
     file_name = dataset_name + '.' + data_type
