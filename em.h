@@ -148,7 +148,7 @@ int reassign_naive(const MatrixXd& data, const vector<Cluster*>& clusters,
             logprobs.push_back(clusters[k]->log_posterior(data.row(n)));
         }
         for(int s = 0; s < S; s++){
-            assignments->push_back(sample(logprobs));
+            assignments->push_back(sample_log(logprobs));
         }
     }
     long long int time2 = clock();

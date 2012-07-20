@@ -8,6 +8,7 @@
 #include <Dense>
 
 using Eigen::VectorXd;
+using Eigen::MatrixXd;
 using std::vector;
 
 bool RAND_INITIALIZED = false; // maybe we shouldn't have this global...
@@ -73,17 +74,25 @@ double gammaln(double x) {
     return -tmp + log(2.50662827465*ser);
 }
 
-// returns the logpdf of a standard d-dimensional Gaussian at x for
-// |x|^2 = norm_squared
-double gaussian_logpdf(double norm_squared, int dim) {
-    return -0.5 * (dim * log (2 * M_PI) + norm_squared);
+int sample(vector<double> probs) {
+    double sum = 0.0, partial = 0.0;
+    for (int i = 0; i < (int) probs.size(); i++)
+        sum += probs[i];
+
+    double r = random_double(sum);
+    for (int i = 0; i < (int) probs.size(); i++) {
+        if (r <= partial + probs[i])
+            return i;
+        partial += probs[i];
+    }
+    assert(false);
 }
 
 // numerically robust sampling from logprobs
 // e.g. if logprobs = [0, -1, -2], then
 // sum = 1 + e^-1 + e^-2, and
 // returns 0 with probability 1/sum, etc.
-int sample(vector<double> logprobs){
+int sample_log(vector<double> logprobs){
     for(int i=0;i<(int)logprobs.size();i++)
         logprobs[i] /= ANNEAL_TEMPERATURE;
     double largest = logprobs[0];
@@ -107,5 +116,37 @@ int sample(vector<double> logprobs){
     }
     assert(false);
 }
+
+// returns the logpdf of a standard d-dimensional Gaussian at x for
+// |x|^2 = norm_squared
+double gaussian_logpdf(double norm_squared, int dim) {
+    return -0.5 * (dim * log (2 * M_PI) + norm_squared);
+}
+
+struct GaussianDistribution {
+    MatrixXd sigma;
+    VectorXd mu;
+    int dim;
+
+    // if cholesky = L, then LL^T = sigma
+    MatrixXd cholesky;
+
+    GaussianDistribution(MatrixXd s, VectorXd m) {
+        sigma = s;
+        mu = m;
+        dim = s.rows();
+        assert(dim == s.cols());
+        assert(dim == m.rows());
+
+        cholesky = s.llt().matrixL();
+    }
+
+    VectorXd draw() const {
+        VectorXd x(dim);
+        for (int i = 0; i < dim; i++)
+            x(i) = gaussian() / sqrt(dim);
+        return cholesky * x + mu;
+    }
+};
 
 #endif

@@ -79,7 +79,7 @@ struct JLProjection {
 
         num_calls++;
         while (true) {
-            int prop = sample(est_loglikelies);
+            int prop = sample_log(est_loglikelies);
             double true_logprob = clusters[prop]->log_posterior(x_d);
             num_tries++;
 
