@@ -6,7 +6,7 @@ from random import randint, sample
 
 DOWNSAMPLE_RATE_N = 1.0 #0.4
 DOWNSAMPLE_RATE_D = 1.0 #0.25
-DOWNSAMPLE = True
+DOWNSAMPLE = False
 
 def dot(v, u):
     return sum(x*y for (x, y) in zip(v, u))
