@@ -255,18 +255,21 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         }
     }
     assignments = pre_assignments;
+    cout << "Cluster sizes: ";
     for(int k = 0; k < K; k++){
         assert(clusters[k]->get_n() != 0);
+        cout << clusters[k]->get_n() << " ";
         /*if(clusters[k]->get_n() == 0){
             clusters[k]->add(data.row(random_int(N)));
         }*/
     }
+    cout << endl;
     if (debug) {
         save(clusters);
     }
 
     vector<int> assignments_old;
-    if (use_kmeans) {
+    if (false) {
         cout << "Running kmeans precomp." << flush;
         time1 = clock();
         assignments_old = assignments;
@@ -294,6 +297,10 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
     for(int t = 0; t != T; t++) {
         if(t != 0) step_anneal(1.0);
         cout << "Starting iteration " << t << " (temperature = " << ANNEAL_TEMPERATURE << ")." << endl;
+        cout << "Cluster sizes: ";
+        for(int k=0;k<K;k++)
+            cout << clusters[k]->get_n() << " ";
+        cout << endl;
         assignments_old = assignments;
         int status;
         if(ALGORITHM == 0){

@@ -6,6 +6,7 @@
 #include "em.h"
 
 #include <Dense>
+#define NDEBUG
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -62,7 +63,7 @@ int main(int argc, char **argv) {
         }
         fscanf(fholdout,"%d",&temp_i);
         labels_holdout[n]=temp_i;
-        labels_train[N+n]=temp_i; // don't tell the algorithm the holdout label
+        labels_train[N+n]=-1; // don't tell the algorithm the holdout label
     }
     fclose(ftrain);
     fclose(fholdout);
@@ -79,10 +80,6 @@ int main(int argc, char **argv) {
     }
     long long int time2 = clock();
     printf("Done training: took %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
-    cout << "Cluster sizes: ";
-    for(int k=0;k<K;k++)
-        cout << clusters[k]->get_n() << " ";
-    cout << endl;
 
     //assign labels to holdout data (this part can probably be cut)
     long long int time3 = clock();
