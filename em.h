@@ -53,6 +53,63 @@ void save(vector<Cluster*>& clusters, vector<int>* assignments=NULL) {
     }
 }
 
+double magnitude(const VectorXd& x) {
+    return x.transpose()*x;
+}
+
+int kmeans(const MatrixXd& data, int K, const vector<int>& pre_assignments,
+           int S, vector<int>* assignments) {
+    if (assignments == NULL) {
+        return 1;
+    }
+    assignments->clear();
+
+    int N = data.rows();
+    int D = data.cols();
+
+    // Compute the means of the pre-assigned clusters
+    VectorXd* means = new VectorXd[K];
+    int* sizes = new int[K];
+    for (int k = 0; k < K; k++) {
+        means[K] = VectorXd::Zero(D);
+    }
+    for (int n = 0; n < N; n++) {
+        if (pre_assignments[n] != -1) {
+            int k = pre_assignments[n];
+            means[k] += data.row(n);
+            sizes[k] += 1;
+        }
+    }
+    for (int k = 0; k < K; k++) {
+        means[k] /= sizes[k];
+    }
+
+    for (int n = 0; n < N; n++) {
+        if(pre_assignments[n] != -1){
+            for(int s = 0; s < S; s++){
+                assignments->push_back(pre_assignments[n]);
+            }
+            continue;
+        }
+        float best_dist = magnitude(data.row(n) - means[0]);
+        int best_index = 0;
+        for (int k = 1; k < K; k++) {
+            float dist = magnitude(data.row(n) - means[k]);
+            if (dist < best_dist) {
+                dist = best_dist;
+                best_index = k;
+            }
+        }
+        for(int s = 0; s < S; s++){
+            assignments->push_back(best_index);
+        }
+    }
+
+    delete[] means;
+    delete[] sizes;
+    return 0;
+}
+
 int reassign_naive(const MatrixXd& data, const vector<Cluster*>& clusters,
                    const vector<int>& pre_assignments, int S, vector<int>* assignments) {
     if (assignments == NULL) {
@@ -173,6 +230,11 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         save(clusters);
     }
 
+    if (true) {
+        cout << "Running kmeans precomp." << endl;
+        kmeans(data, K, pre_assignments, S, &assignments);
+    }
+
     double loglikelihood_old;
     for(int t = 0; t != T; t++) {
         cout << "Starting iteration " << t << "." << endl;
@@ -212,7 +274,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         }
         cout << loglikelihood << endl;
 
-        if (t == T - 1 || (T == -1 && t>0 && loglikelihood < loglikelihood_old + 1e-4)) {
+        if (t == T - 1 || (T < 0 && t>0 && loglikelihood < loglikelihood_old + 1e-4)) {
             cout << "[";
             for (int n = 0; n < N; n++) {
                 // TODO: handle soft assignments?
