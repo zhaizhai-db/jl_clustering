@@ -338,10 +338,17 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
         double loglikelihood = 0.0;
         cout << "Computing loglikelihood..." << flush;
         time1 = clock();
+        fout << N*S << endl;
         for(int n = 0; n < N; n++){
             double log_posteriors[S];
-            for (int s = 0; s < S; s++)
-                log_posteriors[s] = clusters[assignments[S*n + s]]->log_posterior(data.row(n));
+            for (int s = 0; s < S; s++){
+                int k = assignments[S*n + s];
+                VectorXd y_tmp = clusters[k]->chol_sigma_inverse(data.row(n).transpose()-clusters[k]->mu());
+                double norm_sq = y_tmp.dot(y_tmp);
+                log_posteriors[s] = clusters[k]->log_posterior_norm(norm_sq);
+                //log_posteriors[s] = clusters[assignments[S*n + s]]->log_posterior(data.row(n));
+                fout << assignments[S*n+s] << " " << log_posteriors[s] << " " << norm_sq << endl;
+            }
 
             double max_log = log_posteriors[0];
             for (int s = 0; s < S; s++)

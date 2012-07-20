@@ -65,7 +65,7 @@ struct TCluster : public Cluster {
     }
 
     double log_posterior_norm(double norm_sq) {
-        return log_pdf_norm(norm_sq) + (n == 0 ? log(THETA + ALPHA*num_clusters) : log(n - ALPHA));
+        return log_pdf_norm(norm_sq); // + (n == 0 ? log(THETA + ALPHA*num_clusters) : log(n - ALPHA));
     }
 };
 
