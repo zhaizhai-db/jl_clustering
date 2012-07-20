@@ -244,7 +244,7 @@ int em(const MatrixXd& data, int K, const vector<int>& pre_assignments,
     printf(" Done. Time elapsed: %.4f seconds.\n", (time2-time1)/(float)CLOCKS_PER_SEC);
 
     for (int k = 0; k < K; k++){
-        // TODO: maybe add a small multiple of identity to total_covar
+        cout << "Creating cluster " << k << endl;
         Cluster* new_cluster = new TCluster(
             D, D + V0, K0, total_mean, total_covar);
         clusters.push_back(new_cluster);
