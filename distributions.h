@@ -11,6 +11,18 @@ using Eigen::VectorXd;
 using std::vector;
 
 bool RAND_INITIALIZED = false; // maybe we shouldn't have this global...
+double ANNEAL_TEMPERATURE = 1.0;
+void init_anneal(double _temperature){
+    ANNEAL_TEMPERATURE = _temperature;
+}
+void step_anneal(double multiplier){
+    assert(ANNEAL_TEMPERATURE > 0);
+    ANNEAL_TEMPERATURE *= multiplier;
+    assert(ANNEAL_TEMPERATURE > 0);
+}
+void stop_anneal(){
+    init_anneal(1.0);
+}
 
 void init_random() {
   if (!RAND_INITIALIZED) {
@@ -72,6 +84,8 @@ double gaussian_logpdf(double norm_squared, int dim) {
 // sum = 1 + e^-1 + e^-2, and
 // returns 0 with probability 1/sum, etc.
 int sample(vector<double> logprobs){
+    for(int i=0;i<(int)logprobs.size();i++)
+        logprobs[i] /= ANNEAL_TEMPERATURE;
     double largest = logprobs[0];
     for(int i=1;i<(int)logprobs.size();i++){
         largest = std::max(largest,logprobs[i]);

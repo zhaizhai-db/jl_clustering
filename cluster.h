@@ -5,15 +5,17 @@
 #include <iostream>
 
 #include <Dense>
-#include <Householder>
 #include <Cholesky>
 
 #include "distributions.h"
 
 using namespace std;
+/*using Eigen::Matrix;
+using Eigen::Dynamic;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using Eigen::HouseholderQR;
+using Eigen::LLT;*/
+using namespace Eigen;
 
 const bool USE_CACHING = true;
 const double THETA = 2.0;
@@ -30,12 +32,10 @@ class Cluster {
     // Cached decompositions of the covariance matrix
     bool mu_is_cached;
     bool sigma_is_cached;
-    bool inverse_is_cached;
     bool cholesky_is_cached;
     bool logdet_is_cached;
     VectorXd cached_mu;
     MatrixXd cached_sigma;
-    MatrixXd cached_inverse;
     MatrixXd cached_cholesky;
     double cached_logdet;
 
@@ -61,7 +61,6 @@ class Cluster {
     void clear_cache() {
         mu_is_cached = false;
         sigma_is_cached = false;
-        inverse_is_cached = false;
         cholesky_is_cached = false;
         logdet_is_cached = false;
     }
@@ -82,7 +81,7 @@ class Cluster {
 
         n++;
         sum += x;
-        sum_squared += x*x.transpose();
+        sum_squared.noalias() += x*x.transpose();
     }
 
     void remove(const VectorXd& x) {
@@ -93,7 +92,7 @@ class Cluster {
 
         n--;
         sum -= x;
-        sum_squared -= x*x.transpose();
+        sum_squared.noalias() -= x*x.transpose();
     }
 
     // Different distributions have different 'effective mu and sigma',
@@ -120,30 +119,29 @@ class Cluster {
         return cached_sigma;
     }
 
-    // Cached in cached_inverse.
-    const MatrixXd& sigma_inverse() {
-        if (!inverse_is_cached) {
-            cached_inverse = sigma().inverse();
-            inverse_is_cached = USE_CACHING;
-        }
-        return cached_inverse;
-    }
-
-    // Returns upper triangular U such that U^TU = sigma^-1.
+    // Returns lower triangular L such that LL^T = sigma.
     // Cached in cached_cholesky.
-    const MatrixXd& cholesky() {
+    const MatrixXd& cholesky2() {
         if (!cholesky_is_cached) {
-            cached_cholesky = sigma_inverse().llt().matrixU();
+            cached_cholesky = sigma().llt().matrixL();
             cholesky_is_cached = USE_CACHING;
         }
         return cached_cholesky;
     }
 
+    // Returns L^(-1)*x, where LL^T = sigma.
+    VectorXd chol_sigma_inverse(const VectorXd& x) {
+        //Matrix<double, Dynamic, 1> y;
+        return cholesky2().triangularView<Lower>().solve(x);
+    }
+
     // Returns the log of the absolute value of the determinant of sigma().
     double logdet() {
         if (!logdet_is_cached) {
-            HouseholderQR<MatrixXd> qr(sigma());
-            cached_logdet = qr.logAbsDeterminant();
+            cholesky2(); //HACK make sure cholesky is cached
+            cached_logdet = 0.0;
+            for(int i=0;i<d;i++)
+                cached_logdet += 2.0*log(cached_cholesky.coeff(i,i));
             logdet_is_cached = USE_CACHING;
         }
         return cached_logdet;
@@ -152,14 +150,14 @@ class Cluster {
     // O(d^2) to compute the logpdf
     virtual double log_pdf_norm(double norm_sq) = 0;
     virtual double log_pdf(const VectorXd & x) {
-        VectorXd y = x - mu();
-        return log_pdf_norm(y.dot(sigma_inverse() * y));
+        VectorXd y = chol_sigma_inverse(x - mu());
+        return log_pdf_norm(y.dot(y));
     }
 
     virtual double log_posterior_norm(double norm_sq) = 0;
     virtual double log_posterior(const VectorXd& x) {
-        VectorXd y = x - mu();
-        return log_posterior_norm(y.dot(sigma_inverse() * y));
+        VectorXd y = chol_sigma_inverse(x - mu());
+        return log_posterior_norm(y.dot(y));
     }
 };
 

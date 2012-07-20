@@ -16,7 +16,7 @@ using namespace std;
 // N can be any positive integer up to (and including) 10000.
 // The training set will have (T-1)*N points, while the holdout
 // and test data will have N points each.
-#define N (130)
+#define N (10000)
 #define D ((USE_COLOR ? 3 : 1)*NUM_PIXELS/(SCALE*SCALE))
 #define K (10)
 #define T (5)
